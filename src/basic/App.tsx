@@ -11,16 +11,12 @@ import {
 } from "./components/icons";
 import ProductList from "./components/product/ProductList";
 import CartList from "./components/cart/CartList";
+import useNotification from "./utils/hooks/useNotification";
+import NotificationToast from "./components/ui/NotificationToast";
 
 export interface ProductWithUI extends Product {
   description?: string;
   isRecommended?: boolean;
-}
-
-interface Notification {
-  id: string;
-  message: string;
-  type: "error" | "success" | "warning";
 }
 
 // 초기 데이터
@@ -112,7 +108,7 @@ const App = () => {
 
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const notification = useNotification();
   const [showCouponForm, setShowCouponForm] = useState(false);
   const [activeTab, setActiveTab] = useState<"products" | "coupons">(
     "products"
@@ -218,18 +214,6 @@ const App = () => {
     return remaining;
   };
 
-  const addNotification = useCallback(
-    (message: string, type: "error" | "success" | "warning" = "success") => {
-      const id = Date.now().toString();
-      setNotifications((prev) => [...prev, { id, message, type }]);
-
-      setTimeout(() => {
-        setNotifications((prev) => prev.filter((n) => n.id !== id));
-      }, 3000);
-    },
-    []
-  );
-
   const [totalItemCount, setTotalItemCount] = useState(0);
 
   useEffect(() => {
@@ -264,7 +248,7 @@ const App = () => {
     (product: ProductWithUI) => {
       const remainingStock = getRemainingStock(product);
       if (remainingStock <= 0) {
-        addNotification("재고가 부족합니다!", "error");
+        notification.add("재고가 부족합니다!", "error");
         return;
       }
 
@@ -277,7 +261,7 @@ const App = () => {
           const newQuantity = existingItem.quantity + 1;
 
           if (newQuantity > product.stock) {
-            addNotification(
+            notification.add(
               `재고는 ${product.stock}개까지만 있습니다.`,
               "error"
             );
@@ -294,9 +278,9 @@ const App = () => {
         return [...prevCart, { product, quantity: 1 }];
       });
 
-      addNotification("장바구니에 담았습니다", "success");
+      notification.add("장바구니에 담았습니다", "success");
     },
-    [cart, addNotification, getRemainingStock]
+    [cart, notification.add, getRemainingStock]
   );
 
   const removeFromCart = useCallback((productId: string) => {
@@ -317,7 +301,7 @@ const App = () => {
 
       const maxStock = product.stock;
       if (newQuantity > maxStock) {
-        addNotification(`재고는 ${maxStock}개까지만 있습니다.`, "error");
+        notification.add(`재고는 ${maxStock}개까지만 있습니다.`, "error");
         return;
       }
 
@@ -329,7 +313,7 @@ const App = () => {
         )
       );
     },
-    [products, removeFromCart, addNotification, getRemainingStock]
+    [products, removeFromCart, notification.add, getRemainingStock]
   );
 
   const applyCoupon = useCallback(
@@ -337,7 +321,7 @@ const App = () => {
       const currentTotal = calculateCartTotal().totalAfterDiscount;
 
       if (currentTotal < 10000 && coupon.discountType === "percentage") {
-        addNotification(
+        notification.add(
           "percentage 쿠폰은 10,000원 이상 구매 시 사용 가능합니다.",
           "error"
         );
@@ -345,20 +329,20 @@ const App = () => {
       }
 
       setSelectedCoupon(coupon);
-      addNotification("쿠폰이 적용되었습니다.", "success");
+      notification.add("쿠폰이 적용되었습니다.", "success");
     },
-    [addNotification, calculateCartTotal]
+    [notification.add, calculateCartTotal]
   );
 
   const completeOrder = useCallback(() => {
     const orderNumber = `ORD-${Date.now()}`;
-    addNotification(
+    notification.add(
       `주문이 완료되었습니다. 주문번호: ${orderNumber}`,
       "success"
     );
     setCart([]);
     setSelectedCoupon(null);
-  }, [addNotification]);
+  }, [notification.add]);
 
   const addProduct = useCallback(
     (newProduct: Omit<ProductWithUI, "id">) => {
@@ -367,9 +351,9 @@ const App = () => {
         id: `p${Date.now()}`,
       };
       setProducts((prev) => [...prev, product]);
-      addNotification("상품이 추가되었습니다.", "success");
+      notification.add("상품이 추가되었습니다.", "success");
     },
-    [addNotification]
+    [notification.add]
   );
 
   const updateProduct = useCallback(
@@ -379,30 +363,30 @@ const App = () => {
           product.id === productId ? { ...product, ...updates } : product
         )
       );
-      addNotification("상품이 수정되었습니다.", "success");
+      notification.add("상품이 수정되었습니다.", "success");
     },
-    [addNotification]
+    [notification.add]
   );
 
   const deleteProduct = useCallback(
     (productId: string) => {
       setProducts((prev) => prev.filter((p) => p.id !== productId));
-      addNotification("상품이 삭제되었습니다.", "success");
+      notification.add("상품이 삭제되었습니다.", "success");
     },
-    [addNotification]
+    [notification.add]
   );
 
   const addCoupon = useCallback(
     (newCoupon: Coupon) => {
       const existingCoupon = coupons.find((c) => c.code === newCoupon.code);
       if (existingCoupon) {
-        addNotification("이미 존재하는 쿠폰 코드입니다.", "error");
+        notification.add("이미 존재하는 쿠폰 코드입니다.", "error");
         return;
       }
       setCoupons((prev) => [...prev, newCoupon]);
-      addNotification("쿠폰이 추가되었습니다.", "success");
+      notification.add("쿠폰이 추가되었습니다.", "success");
     },
-    [coupons, addNotification]
+    [coupons, notification.add]
   );
 
   const deleteCoupon = useCallback(
@@ -411,9 +395,9 @@ const App = () => {
       if (selectedCoupon?.code === couponCode) {
         setSelectedCoupon(null);
       }
-      addNotification("쿠폰이 삭제되었습니다.", "success");
+      notification.add("쿠폰이 삭제되었습니다.", "success");
     },
-    [selectedCoupon, addNotification]
+    [selectedCoupon, notification.add]
   );
 
   const handleProductSubmit = (e: React.FormEvent) => {
@@ -466,36 +450,10 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {notifications.length > 0 && (
-        <div className="fixed top-20 right-4 z-50 space-y-2 max-w-sm">
-          {notifications.map((notif) => (
-            <div
-              key={notif.id}
-              className={`p-4 rounded-md shadow-md text-white flex justify-between items-center ${
-                notif.type === "error"
-                  ? "bg-red-600"
-                  : notif.type === "warning"
-                  ? "bg-yellow-600"
-                  : "bg-green-600"
-              }`}
-            >
-              <span className="mr-2">{notif.message}</span>
-              <Button
-                onClick={() =>
-                  setNotifications((prev) =>
-                    prev.filter((n) => n.id !== notif.id)
-                  )
-                }
-                variant="ghost"
-                size="small"
-                className="text-white hover:text-gray-200 p-1 flex items-center justify-center"
-              >
-                <XIcon className="w-4 h-4" />
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
+      <NotificationToast
+        notifications={notification.notifications}
+        onRemove={notification.remove}
+      />
       <header className="bg-white shadow-sm sticky top-0 z-40 border-b">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between items-center h-16">
@@ -722,7 +680,7 @@ const App = () => {
                               if (value === "") {
                                 setProductForm({ ...productForm, price: 0 });
                               } else if (parseInt(value) < 0) {
-                                addNotification(
+                                notification.add(
                                   "가격은 0보다 커야 합니다",
                                   "error"
                                 );
@@ -754,13 +712,13 @@ const App = () => {
                               if (value === "") {
                                 setProductForm({ ...productForm, stock: 0 });
                               } else if (parseInt(value) < 0) {
-                                addNotification(
+                                notification.add(
                                   "재고는 0보다 커야 합니다",
                                   "error"
                                 );
                                 setProductForm({ ...productForm, stock: 0 });
                               } else if (parseInt(value) > 9999) {
-                                addNotification(
+                                notification.add(
                                   "재고는 9999개를 초과할 수 없습니다",
                                   "error"
                                 );
@@ -1024,7 +982,7 @@ const App = () => {
                                 const value = parseInt(e.target.value) || 0;
                                 if (couponForm.discountType === "percentage") {
                                   if (value > 100) {
-                                    addNotification(
+                                    notification.add(
                                       "할인율은 100%를 초과할 수 없습니다",
                                       "error"
                                     );
@@ -1040,7 +998,7 @@ const App = () => {
                                   }
                                 } else {
                                   if (value > 100000) {
-                                    addNotification(
+                                    notification.add(
                                       "할인 금액은 100,000원을 초과할 수 없습니다",
                                       "error"
                                     );
