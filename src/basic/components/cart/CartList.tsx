@@ -2,17 +2,16 @@ import { ShoppingBagIcon } from "../icons";
 import { CartItem } from "../../../types";
 import Button from "../ui/Button";
 import { XIcon } from "../icons";
+import cartModel from "../../models/cart";
 
 export default function CartList({
   cart,
   removeFromCart,
   updateQuantity,
-  calculateItemTotal,
 }: {
   cart: CartItem[];
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
-  calculateItemTotal: (item: CartItem) => number;
 }) {
   if (cart.length === 0) {
     return (
@@ -34,7 +33,7 @@ export default function CartList({
           item={item}
           removeFromCart={removeFromCart}
           updateQuantity={updateQuantity}
-          calculateItemTotal={calculateItemTotal}
+          calculatedItemTotal={cartModel.calculateItemTotal({ item, cart })}
         />
       ))}
     </div>
@@ -45,18 +44,17 @@ const CartItemCard = ({
   item,
   removeFromCart,
   updateQuantity,
-  calculateItemTotal,
+  calculatedItemTotal,
 }: {
   item: CartItem;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
-  calculateItemTotal: (item: CartItem) => number;
+  calculatedItemTotal: number;
 }) => {
-  const itemTotal = calculateItemTotal(item);
   const originalPrice = item.product.price * item.quantity;
-  const hasDiscount = itemTotal < originalPrice;
+  const hasDiscount = calculatedItemTotal < originalPrice;
   const discountRate = hasDiscount
-    ? Math.round((1 - itemTotal / originalPrice) * 100)
+    ? Math.round((1 - calculatedItemTotal / originalPrice) * 100)
     : 0;
 
   return (
@@ -99,7 +97,7 @@ const CartItemCard = ({
             </span>
           )}
           <p className="text-sm font-medium text-gray-900">
-            {Math.round(itemTotal).toLocaleString()}원
+            {Math.round(calculatedItemTotal).toLocaleString()}원
           </p>
         </div>
       </div>

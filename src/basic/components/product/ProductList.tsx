@@ -3,6 +3,7 @@ import { ProductWithUI } from "../../App";
 import { formatPrice } from "../../utils/formatters";
 import { DefaultImageIcon } from "../icons";
 import Button from "../ui/Button";
+import cartModel from "../../models/cart";
 
 export default function ProductList({
   cart,
@@ -15,13 +16,6 @@ export default function ProductList({
   debouncedSearchTerm: string;
   addToCart: (product: Product) => void;
 }) {
-  const getRemainingStock = (product: Product): number => {
-    const cartItem = cart.find((item) => item.product.id === product.id);
-    const remaining = product.stock - (cartItem?.quantity || 0);
-
-    return remaining;
-  };
-
   const filteredProducts = debouncedSearchTerm
     ? products.filter(
         (product) =>
@@ -48,11 +42,15 @@ export default function ProductList({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {filteredProducts.map((product) => {
+        const remainingStock = cartModel.getRemainingStock({
+          product,
+          cart,
+        });
         return (
           <ProductItem
             key={product.id}
             product={product}
-            remainingStock={getRemainingStock(product)}
+            remainingStock={remainingStock}
             addToCart={addToCart}
           />
         );
