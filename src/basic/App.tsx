@@ -743,32 +743,29 @@ const App = () => {
                             }
                             onChange={(e) => {
                               const value = e.target.value;
-                              // 유효성 검증 - 재고
-                              if (value === "" || /^\d+$/.test(value)) {
+                              const validation =
+                                productModel.validateProductStock(value);
+
+                              if (validation.isValid || value === "") {
                                 setProductForm({
                                   ...productForm,
-                                  stock: value === "" ? 0 : parseInt(value),
+                                  stock: value === "" ? 0 : validation.value,
                                 });
                               }
                             }}
                             onBlur={(e) => {
                               const value = e.target.value;
-                              // 유효성 검증 - 재고
-                              if (value === "") {
-                                setProductForm({ ...productForm, stock: 0 });
-                              } else if (parseInt(value) < 0) {
-                                notification.add(
-                                  "재고는 0보다 커야 합니다",
-                                  "error"
-                                );
-                                setProductForm({ ...productForm, stock: 0 });
-                              } else if (parseInt(value) > 9999) {
-                                notification.add(
-                                  "재고는 9999개를 초과할 수 없습니다",
-                                  "error"
-                                );
-                                setProductForm({ ...productForm, stock: 9999 });
+                              const validation =
+                                productModel.validateProductStock(value);
+
+                              if (!validation.isValid && value !== "") {
+                                notification.add(validation.message, "error");
                               }
+
+                              setProductForm({
+                                ...productForm,
+                                stock: validation.value,
+                              });
                             }}
                             placeholder="숫자만 입력"
                             required
@@ -1029,18 +1026,18 @@ const App = () => {
                               onBlur={(e) => {
                                 const value = parseInt(e.target.value) || 0;
 
-                                const result =
+                                const validation =
                                   couponModel.validateDiscountValue({
                                     discountType: couponForm.discountType,
                                     discountValue: value,
                                   });
 
-                                if (!result.isValid) {
-                                  notification.add(result.message, "error");
+                                if (!validation.isValid) {
+                                  notification.add(validation.message, "error");
                                 }
                                 setCouponForm({
                                   ...couponForm,
-                                  discountValue: result.value,
+                                  discountValue: validation.value,
                                 });
                               }}
                               className="text-sm"

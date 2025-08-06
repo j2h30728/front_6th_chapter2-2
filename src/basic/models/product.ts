@@ -19,6 +19,36 @@ const productModel = {
 
     return Math.max(0, remaining);
   },
+
+  validateProductStock(stockValue: string) {
+    if (stockValue === "") {
+      return { isValid: true, message: "", value: 0 };
+    }
+
+    if (!/^\d+$/.test(stockValue)) {
+      return {
+        isValid: false,
+        message: "재고는 숫자만 입력 가능합니다",
+        value: 0,
+      };
+    }
+
+    const stock = parseInt(stockValue);
+
+    if (stock < 0) {
+      return { isValid: false, message: "재고는 0보다 커야 합니다", value: 0 };
+    }
+
+    if (stock > 9999) {
+      return {
+        isValid: false,
+        message: "재고는 9999개를 초과할 수 없습니다",
+        value: 9999,
+      };
+    }
+
+    return { isValid: true, message: "", value: stock };
+  },
 };
 
 export default productModel;
