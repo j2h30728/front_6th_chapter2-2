@@ -1,4 +1,5 @@
 import { CartItem, Coupon, Product } from "../../types";
+import discountModel from "./discount";
 
 const cartModel = {
   /**
@@ -14,41 +15,7 @@ const cartModel = {
     item: CartItem;
     cart: CartItem[];
   }): number {
-    const { price } = item.product;
-    const { quantity } = item;
-    const discount = this.getMaxApplicableDiscount({ item, cart });
-
-    return Math.round(price * quantity * (1 - discount));
-  },
-
-  /**
-   * 적용 가능한 최대 할인율 계산
-   * @param item - 아이템 정보
-   * @param cart - 장바구니 정보 (대량 구매 할인 확인용)
-   * @returns 적용 가능한 최대 할인율 (0~0.5)
-   */
-  getMaxApplicableDiscount({
-    item,
-    cart,
-  }: {
-    item: CartItem;
-    cart: CartItem[];
-  }): number {
-    const { discounts } = item.product;
-    const { quantity } = item;
-
-    const baseDiscount = discounts.reduce((maxDiscount, discount) => {
-      return quantity >= discount.quantity && discount.rate > maxDiscount
-        ? discount.rate
-        : maxDiscount;
-    }, 0);
-
-    const hasBulkPurchase = cart.some((cartItem) => cartItem.quantity >= 10);
-    if (hasBulkPurchase) {
-      return Math.min(baseDiscount + 0.05, 0.5); // 대량 구매 시 추가 5% 할인
-    }
-
-    return baseDiscount;
+    return discountModel.calculateItemTotal({ item, cart });
   },
 
   /**
