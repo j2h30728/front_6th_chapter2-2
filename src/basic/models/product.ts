@@ -1,4 +1,5 @@
 import { CartItem, Product, ValidationResult } from "../../types";
+import { VALIDATION_LIMITS } from "../utils/contants";
 import { isValidNumericInput } from "../utils/validators";
 
 const productModel = {
@@ -23,23 +24,27 @@ const productModel = {
 
   validateProductPrice(productPrice: string): ValidationResult {
     if (productPrice === "") {
-      return { isValid: true, message: "", value: 0 };
+      return {
+        isValid: true,
+        message: "",
+        value: VALIDATION_LIMITS.PRODUCT.MIN_VALUE,
+      };
     }
 
     if (!isValidNumericInput(productPrice)) {
       return {
         isValid: false,
         message: "가격은 숫자만 입력 가능합니다.",
-        value: 0,
+        value: VALIDATION_LIMITS.PRODUCT.MIN_VALUE,
       };
     }
 
     const price = parseInt(productPrice);
-    if (price < 0) {
+    if (price < VALIDATION_LIMITS.PRODUCT.MIN_VALUE) {
       return {
         isValid: false,
         message: "가격은 0보다 커야 합니다",
-        value: 0,
+        value: VALIDATION_LIMITS.PRODUCT.MIN_VALUE,
       };
     }
 
@@ -48,28 +53,36 @@ const productModel = {
 
   validateProductStock(stockValue: string): ValidationResult {
     if (stockValue === "") {
-      return { isValid: true, message: "", value: 0 };
+      return {
+        isValid: true,
+        message: "",
+        value: VALIDATION_LIMITS.PRODUCT.MIN_STOCK,
+      };
     }
 
     if (!isValidNumericInput(stockValue)) {
       return {
         isValid: false,
         message: "재고는 숫자만 입력 가능합니다",
-        value: 0,
+        value: VALIDATION_LIMITS.PRODUCT.MIN_STOCK,
       };
     }
 
     const stock = parseInt(stockValue);
 
-    if (stock < 0) {
-      return { isValid: false, message: "재고는 0보다 커야 합니다", value: 0 };
+    if (stock < VALIDATION_LIMITS.PRODUCT.MIN_STOCK) {
+      return {
+        isValid: false,
+        message: "재고는 0보다 커야 합니다",
+        value: VALIDATION_LIMITS.PRODUCT.MIN_STOCK,
+      };
     }
 
-    if (stock > 9999) {
+    if (stock > VALIDATION_LIMITS.PRODUCT.MAX_STOCK) {
       return {
         isValid: false,
         message: "재고는 9999개를 초과할 수 없습니다",
-        value: 9999,
+        value: VALIDATION_LIMITS.PRODUCT.MAX_STOCK,
       };
     }
 

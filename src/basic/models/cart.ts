@@ -1,4 +1,5 @@
 import { CartItem, Coupon, Product } from "../../types";
+import { VALIDATION_LIMITS } from "../utils/contants";
 import discountModel from "./discount";
 
 const cartModel = {
@@ -99,7 +100,10 @@ const cartModel = {
       });
     }
 
-    return [...cart, { product, quantity: 1 }] as CartItem[];
+    return [
+      ...cart,
+      { product, quantity: VALIDATION_LIMITS.CART.DEFAULT_QUANTITY },
+    ] as CartItem[];
   },
 
   /**

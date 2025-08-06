@@ -1,4 +1,5 @@
 import { CartItem, Discount } from "../../types";
+import { VALIDATION_LIMITS } from "../utils/contants";
 
 const discountModel = {
   /**
@@ -14,11 +15,11 @@ const discountModel = {
     discounts: Discount[];
     quantity: number;
   }): number {
-    return discounts.reduce((maxDiscount, discount) => {
+    return discounts.reduce((maxDiscount: number, discount: Discount) => {
       return quantity >= discount.quantity && discount.rate > maxDiscount
         ? discount.rate
         : maxDiscount;
-    }, 0);
+    }, VALIDATION_LIMITS.DISCOUNT.MIN_VALUE);
   },
 
   /**
@@ -34,9 +35,15 @@ const discountModel = {
     carts: CartItem[];
     baseDiscount: number;
   }): number {
-    const hasBulkPurchase = carts.some((cartItem) => cartItem.quantity >= 10);
+    const hasBulkPurchase = carts.some(
+      (cartItem) =>
+        cartItem.quantity >= VALIDATION_LIMITS.CART.BULK_PURCHASE_THRESHOLD
+    );
     if (hasBulkPurchase) {
-      return Math.min(baseDiscount + 0.05, 0.5); // 대량 구매 시 추가 5% 할인
+      return Math.min(
+        baseDiscount + VALIDATION_LIMITS.CART.BULK_PURCHASE_BONUS,
+        VALIDATION_LIMITS.CART.MAX_DISCOUNT_RATE
+      );
     }
 
     return baseDiscount;
