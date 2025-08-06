@@ -15,6 +15,7 @@ import useNotification from "./utils/hooks/useNotification";
 import NotificationToast from "./components/ui/NotificationToast";
 import cartModel from "./models/cart";
 import productModel from "./models/product";
+import couponModel from "./models/coupon";
 
 export interface ProductWithUI extends Product {
   description?: string;
@@ -315,11 +316,12 @@ const App = () => {
       }).totalAfterDiscount;
 
       // 할인후 전체 가격이 만원 미만이고, 퍼센트 할인 쿠폰일 경우
-      if (currentTotal < 10000 && coupon.discountType === "percentage") {
-        notification.add(
-          "percentage 쿠폰은 10,000원 이상 구매 시 사용 가능합니다.",
-          "error"
-        );
+      const validation = couponModel.applyCoupon({
+        coupon,
+        cartTotal: currentTotal,
+      });
+      if (!validation.isValid) {
+        notification.add(validation.message, "error");
         return;
       }
 
@@ -383,8 +385,11 @@ const App = () => {
   const addCoupon = useCallback(
     (newCoupon: Coupon) => {
       // 이미 쿠폰이 존재하는 지 확인
-      const existingCoupon = coupons.find((c) => c.code === newCoupon.code);
-      if (existingCoupon) {
+      const isDuplicate = couponModel.isDuplicateCode({
+        code: newCoupon.code,
+        coupons,
+      });
+      if (isDuplicate) {
         notification.add("이미 존재하는 쿠폰 코드입니다.", "error");
         return;
       }
@@ -967,7 +972,9 @@ const App = () => {
                               onChange={(e) =>
                                 setCouponForm({
                                   ...couponForm,
-                                  code: e.target.value.toUpperCase(),
+                                  code: couponModel.formatCouponCode(
+                                    e.target.value
+                                  ),
                                 })
                               }
                               className="text-sm font-mono"
@@ -1021,39 +1028,20 @@ const App = () => {
                               }}
                               onBlur={(e) => {
                                 const value = parseInt(e.target.value) || 0;
-                                if (couponForm.discountType === "percentage") {
-                                  if (value > 100) {
-                                    notification.add(
-                                      "할인율은 100%를 초과할 수 없습니다",
-                                      "error"
-                                    );
-                                    setCouponForm({
-                                      ...couponForm,
-                                      discountValue: 100,
-                                    });
-                                  } else if (value < 0) {
-                                    setCouponForm({
-                                      ...couponForm,
-                                      discountValue: 0,
-                                    });
-                                  }
-                                } else {
-                                  if (value > 100000) {
-                                    notification.add(
-                                      "할인 금액은 100,000원을 초과할 수 없습니다",
-                                      "error"
-                                    );
-                                    setCouponForm({
-                                      ...couponForm,
-                                      discountValue: 100000,
-                                    });
-                                  } else if (value < 0) {
-                                    setCouponForm({
-                                      ...couponForm,
-                                      discountValue: 0,
-                                    });
-                                  }
+
+                                const result =
+                                  couponModel.validateDiscountValue({
+                                    discountType: couponForm.discountType,
+                                    discountValue: value,
+                                  });
+
+                                if (!result.isValid) {
+                                  notification.add(result.message, "error");
                                 }
+                                setCouponForm({
+                                  ...couponForm,
+                                  discountValue: result.value,
+                                });
                               }}
                               className="text-sm"
                               placeholder={
