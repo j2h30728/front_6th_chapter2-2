@@ -1,14 +1,11 @@
-import { Coupon } from "../../types";
+import { Coupon, ValidationResult } from "../../types";
+import { isValidNumericInput } from "../utils/validators";
 
 const couponModel = {
-  validateDiscountValue({
+  validateDiscountRange({
     discountType,
     discountValue,
-  }: Pick<Coupon, "discountType" | "discountValue">): {
-    isValid: boolean;
-    message: string;
-    value: number;
-  } {
+  }: Pick<Coupon, "discountType" | "discountValue">): ValidationResult {
     if (discountType === "percentage") {
       if (discountValue > 100) {
         return {
@@ -48,7 +45,19 @@ const couponModel = {
     };
   },
 
-  applyCoupon({ coupon, cartTotal }: { coupon: Coupon; cartTotal: number }): {
+  validateDiscountValue(discountValue: string): ValidationResult {
+    if (discountValue === "") {
+      return { isValid: true, value: 0, message: "" };
+    }
+
+    if (!isValidNumericInput(discountValue)) {
+      return { isValid: false, value: 0, message: "숫자만 입력 가능합니다" };
+    }
+
+    return { isValid: true, value: parseInt(discountValue), message: "" };
+  },
+
+  apply({ coupon, cartTotal }: { coupon: Coupon; cartTotal: number }): {
     isValid: boolean;
     message: string;
   } {

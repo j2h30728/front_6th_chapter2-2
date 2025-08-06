@@ -16,7 +16,7 @@ const cartModel = {
   }): number {
     const { price } = item.product;
     const { quantity } = item;
-    const discount = cartModel.getMaxApplicableDiscount({ item, cart });
+    const discount = this.getMaxApplicableDiscount({ item, cart });
 
     return Math.round(price * quantity * (1 - discount));
   },
@@ -73,7 +73,7 @@ const cartModel = {
     cart.forEach((item) => {
       const itemPrice = item.product.price * item.quantity;
       totalBeforeDiscount += itemPrice;
-      totalAfterDiscount += cartModel.calculateItemTotal({ item, cart });
+      totalAfterDiscount += this.calculateItemTotal({ item, cart });
     });
 
     if (selectedCoupon) {
@@ -125,10 +125,10 @@ const cartModel = {
   addItemToCart({ cart, product }: { cart: CartItem[]; product: Product }) {
     const eixstingItem = cart.find((item) => item.product.id === product.id);
     if (eixstingItem) {
-      return cartModel.updateCartItemQuantity({
+      return this.updateCartItemQuantity({
         cart,
         productId: product.id,
-        newQuantity: 1,
+        newQuantity: eixstingItem.quantity + 1,
       });
     }
 

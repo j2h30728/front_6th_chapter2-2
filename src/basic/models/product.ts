@@ -1,4 +1,5 @@
-import { CartItem, Product } from "../../types";
+import { CartItem, Product, ValidationResult } from "../../types";
+import { isValidNumericInput } from "../utils/validators";
 
 const productModel = {
   /**
@@ -20,12 +21,37 @@ const productModel = {
     return Math.max(0, remaining);
   },
 
-  validateProductStock(stockValue: string) {
+  validateProductPrice(productPrice: string): ValidationResult {
+    if (productPrice === "") {
+      return { isValid: true, message: "", value: 0 };
+    }
+
+    if (!isValidNumericInput(productPrice)) {
+      return {
+        isValid: false,
+        message: "가격은 숫자만 입력 가능합니다.",
+        value: 0,
+      };
+    }
+
+    const price = parseInt(productPrice);
+    if (price < 0) {
+      return {
+        isValid: false,
+        message: "가격은 0보다 커야 합니다",
+        value: 0,
+      };
+    }
+
+    return { isValid: true, message: "", value: price };
+  },
+
+  validateProductStock(stockValue: string): ValidationResult {
     if (stockValue === "") {
       return { isValid: true, message: "", value: 0 };
     }
 
-    if (!/^\d+$/.test(stockValue)) {
+    if (!isValidNumericInput(stockValue)) {
       return {
         isValid: false,
         message: "재고는 숫자만 입력 가능합니다",

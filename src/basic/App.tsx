@@ -16,6 +16,7 @@ import NotificationToast from "./components/ui/NotificationToast";
 import cartModel from "./models/cart";
 import productModel from "./models/product";
 import couponModel from "./models/coupon";
+import { isValidNumericInput } from "./utils/validators";
 
 export interface ProductWithUI extends Product {
   description?: string;
@@ -316,7 +317,7 @@ const App = () => {
       }).totalAfterDiscount;
 
       // 할인후 전체 가격이 만원 미만이고, 퍼센트 할인 쿠폰일 경우
-      const validation = couponModel.applyCoupon({
+      const validation = couponModel.apply({
         coupon,
         cartTotal: currentTotal,
       });
@@ -329,7 +330,7 @@ const App = () => {
       setSelectedCoupon(coupon);
       notification.add("쿠폰이 적용되었습니다.", "success");
     },
-    [notification.add]
+    [notification.add, selectedCoupon]
   );
 
   // [order] 주문 완료 처리
@@ -487,6 +488,61 @@ const App = () => {
     cart,
     selectedCoupon,
   });
+
+  const handleStockChange = useCallback(
+    (value: string) => {
+      const validation = productModel.validateProductStock(value);
+
+      if (validation.isValid) {
+        setProductForm({
+          ...productForm,
+          stock: validation.value,
+        });
+      } else if (validation.message) {
+        notification.add(validation.message, "error");
+        setProductForm({
+          ...productForm,
+          stock: validation.value,
+        });
+      }
+    },
+    [productForm, notification.add]
+  );
+
+  const handleCouponChange = useCallback(
+    (value: string) => {
+      const discountValue = parseInt(value) || 0;
+
+      const validation = couponModel.validateDiscountRange({
+        discountType: couponForm.discountType,
+        discountValue,
+      });
+
+      if (!validation.isValid) {
+        notification.add(validation.message, "error");
+      }
+      setCouponForm({
+        ...couponForm,
+        discountValue: validation.value,
+      });
+    },
+    [couponForm, notification.add]
+  );
+
+  const handleProductPriceChange = useCallback(
+    (value: string) => {
+      const validation = productModel.validateProductPrice(value);
+
+      if (!validation.isValid) {
+        notification.add(validation.message, "error");
+      }
+      setProductForm({
+        ...productForm,
+        price: validation.value,
+      });
+    },
+    [productForm, notification.add]
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -708,28 +764,17 @@ const App = () => {
                               productForm.price === 0 ? "" : productForm.price
                             }
                             onChange={(e) => {
-                              // 유효성 검증 - 가격
                               const value = e.target.value;
-                              if (value === "" || /^\d+$/.test(value)) {
+                              if (isValidNumericInput(value)) {
                                 setProductForm({
                                   ...productForm,
                                   price: value === "" ? 0 : parseInt(value),
                                 });
                               }
                             }}
-                            onBlur={(e) => {
-                              const value = e.target.value;
-                              // 유효성 검증 - 가격
-                              if (value === "") {
-                                setProductForm({ ...productForm, price: 0 });
-                              } else if (parseInt(value) < 0) {
-                                notification.add(
-                                  "가격은 0보다 커야 합니다",
-                                  "error"
-                                );
-                                setProductForm({ ...productForm, price: 0 });
-                              }
-                            }}
+                            onBlur={(e) =>
+                              handleProductPriceChange(e.target.value)
+                            }
                             placeholder="숫자만 입력"
                             required
                           />
@@ -743,29 +788,15 @@ const App = () => {
                             }
                             onChange={(e) => {
                               const value = e.target.value;
-                              const validation =
-                                productModel.validateProductStock(value);
-
-                              if (validation.isValid || value === "") {
+                              if (isValidNumericInput(value)) {
                                 setProductForm({
                                   ...productForm,
-                                  stock: value === "" ? 0 : validation.value,
+                                  stock: value === "" ? 0 : parseInt(value),
                                 });
                               }
                             }}
                             onBlur={(e) => {
-                              const value = e.target.value;
-                              const validation =
-                                productModel.validateProductStock(value);
-
-                              if (!validation.isValid && value !== "") {
-                                notification.add(validation.message, "error");
-                              }
-
-                              setProductForm({
-                                ...productForm,
-                                stock: validation.value,
-                              });
+                              handleStockChange(e.target.value);
                             }}
                             placeholder="숫자만 입력"
                             required
@@ -1013,32 +1044,10 @@ const App = () => {
                                   : couponForm.discountValue
                               }
                               onChange={(e) => {
-                                const value = e.target.value;
-                                // 유효성 검증 - 쿠폰
-                                if (value === "" || /^\d+$/.test(value)) {
-                                  setCouponForm({
-                                    ...couponForm,
-                                    discountValue:
-                                      value === "" ? 0 : parseInt(value),
-                                  });
-                                }
+                                handleCouponChange(e.target.value);
                               }}
                               onBlur={(e) => {
-                                const value = parseInt(e.target.value) || 0;
-
-                                const validation =
-                                  couponModel.validateDiscountValue({
-                                    discountType: couponForm.discountType,
-                                    discountValue: value,
-                                  });
-
-                                if (!validation.isValid) {
-                                  notification.add(validation.message, "error");
-                                }
-                                setCouponForm({
-                                  ...couponForm,
-                                  discountValue: validation.value,
-                                });
+                                handleCouponChange(e.target.value);
                               }}
                               className="text-sm"
                               placeholder={
