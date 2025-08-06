@@ -51,6 +51,7 @@ const CartItemCard = ({
   updateQuantity: (productId: string, quantity: number) => void;
   calculatedItemTotal: number;
 }) => {
+  // 할인률 계산
   const originalPrice = item.product.price * item.quantity;
   const hasDiscount = calculatedItemTotal < originalPrice;
   const discountRate = hasDiscount

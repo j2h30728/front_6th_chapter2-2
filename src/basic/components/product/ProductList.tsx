@@ -3,7 +3,7 @@ import { ProductWithUI } from "../../App";
 import { formatPrice } from "../../utils/formatters";
 import { DefaultImageIcon } from "../icons";
 import Button from "../ui/Button";
-import cartModel from "../../models/cart";
+import productModel from "../../models/product";
 
 export default function ProductList({
   cart,
@@ -42,7 +42,7 @@ export default function ProductList({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {filteredProducts.map((product) => {
-        const remainingStock = cartModel.getRemainingStock({
+        const remainingStock = productModel.getRemainingStock({
           product,
           cart,
         });

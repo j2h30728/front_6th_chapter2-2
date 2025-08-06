@@ -4,7 +4,7 @@ const cartModel = {
   /**
    * 개별 아이템의 할인 적용 후 총액 계산
    * @param item - 아이템 정보
-   * @param cart - 장바구니 정보
+   * @param cart - 장바구니 정보 (대량 구매 할인 계산용)
    * @returns 할인 적용 후 총액
    */
   calculateItemTotal({
@@ -24,8 +24,8 @@ const cartModel = {
   /**
    * 적용 가능한 최대 할인율 계산
    * @param item - 아이템 정보
-   * @param cart - 장바구니 정보
-   * @returns 적용 가능한 최대 할인율
+   * @param cart - 장바구니 정보 (대량 구매 할인 확인용)
+   * @returns 적용 가능한 최대 할인율 (0~0.5)
    */
   getMaxApplicableDiscount({
     item,
@@ -52,10 +52,10 @@ const cartModel = {
   },
 
   /**
-   * 장바구니 총액 계산
+   * 장바구니 총액 계산 (할인 전/후)
    * @param cart - 장바구니 정보
-   * @param selectedCoupon - 선택된 쿠폰
-   * @returns 할인 적용 후 총액
+   * @param selectedCoupon - 선택된 쿠폰 (null 가능)
+   * @returns 할인 전 총액과 할인 후 총액
    */
   calculateCartTotal({
     cart,
@@ -96,11 +96,11 @@ const cartModel = {
   },
 
   /**
-   * 장바구니 아이템 수량 변경
+   * 장바구니 내 특정 상품의 수량을 변경하고 새로운 장바구니 배열 반환
    * @param cart - 장바구니 정보
-   * @param productId - 상품 ID
-   * @param newQuantity - 수량
-   * @returns 수량 변경 후 장바구니 정보
+   * @param productId - 수량을 변경할 상품 ID
+   * @param newQuantity - 새로운 수량
+   * @returns 수량 변경 후 장바구니 배열
    */
   updateCartItemQuantity({
     cart,
@@ -117,10 +117,10 @@ const cartModel = {
   },
 
   /**
-   * 상품 추가
+   * 장바구니에 상품을 추가하거나 기존 상품 수량을 증가시킴
    * @param cart - 장바구니 정보
-   * @param product - 상품 정보
-   * @returns 상품 추가 후 장바구니 정보
+   * @param product - 추가할 상품 정보
+   * @returns 상품 추가 후 장바구니 배열
    */
   addItemToCart({ cart, product }: { cart: CartItem[]; product: Product }) {
     const eixstingItem = cart.find((item) => item.product.id === product.id);
@@ -136,10 +136,10 @@ const cartModel = {
   },
 
   /**
-   * 상품 제거
+   * 장바구니에서 특정 상품을 완전히 제거
    * @param cart - 장바구니 정보
-   * @param productId - 상품 ID
-   * @returns 상품 제거 후 장바구니 정보
+   * @param productId - 제거할 상품 ID
+   * @returns 상품 제거 후 장바구니 배열
    */
   removeItemFromCart({
     cart,
@@ -149,25 +149,6 @@ const cartModel = {
     productId: string;
   }): CartItem[] {
     return cart.filter((item) => item.product.id !== productId);
-  },
-
-  /**
-   * 남은 재고 계산
-   * @param product - 상품 정보
-   * @param cart - 장바구니 정보
-   * @returns 남은 재고
-   */
-  getRemainingStock({
-    product,
-    cart,
-  }: {
-    product: Product;
-    cart: CartItem[];
-  }): number {
-    const cartItem = cart.find((item) => item.product.id === product.id);
-    const remaining = product.stock - (cartItem?.quantity || 0);
-
-    return Math.max(0, remaining);
   },
 };
 
