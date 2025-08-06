@@ -17,6 +17,7 @@ import cartModel from "./models/cart";
 import productModel from "./models/product";
 import couponModel from "./models/coupon";
 import { isValidNumericInput } from "./utils/validators";
+import { useDebounce } from "./utils/hooks/useDebounce";
 
 export interface ProductWithUI extends Product {
   description?: string;
@@ -137,7 +138,7 @@ const App = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   // 디바운스된 검색어
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebounce(searchTerm);
 
   // Admin
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
@@ -202,14 +203,6 @@ const App = () => {
       localStorage.removeItem("cart");
     }
   }, [cart]);
-
-  // [ui] 검색어 디바운스 처리
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
 
   // [cart] 장바구니 담기 로직
   const addToCart = useCallback(
