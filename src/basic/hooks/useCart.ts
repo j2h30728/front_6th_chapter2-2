@@ -166,6 +166,27 @@ export function useCart() {
     return cartService.calculateItemTotal({ item, cart });
   }, []);
 
+  const calculateOriginalPrice = useCallback((item: CartItem) => {
+    return cartService.calculateOriginalPrice(item);
+  }, []);
+
+  const calculateItemDiscountRate = useCallback(
+    (originalPrice: number, calculatedTotal: number) => {
+      return cartService.calculateItemDiscountRate(
+        originalPrice,
+        calculatedTotal
+      );
+    },
+    []
+  );
+
+  const hasItemDiscount = useCallback(
+    (originalPrice: number, calculatedTotal: number) => {
+      return cartService.hasItemDiscount(originalPrice, calculatedTotal);
+    },
+    []
+  );
+
   return {
     cart: state.cart,
     addToCart,
@@ -173,5 +194,8 @@ export function useCart() {
     updateQuantity,
     completeOrder,
     calculateItemTotal,
+    calculateOriginalPrice,
+    calculateItemDiscountRate,
+    hasItemDiscount,
   };
 }

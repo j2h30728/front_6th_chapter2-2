@@ -2,6 +2,7 @@ import { CartItem, Coupon, Product } from "../../types";
 import cartModel from "../models/cart";
 import discountService from "./discount";
 import productService from "./product";
+import couponService from "./coupon";
 
 export type CartOperationResult =
   | {
@@ -53,13 +54,14 @@ const cartService = {
 
     if (selectedCoupon) {
       if (selectedCoupon.discountType === "amount") {
-        totalAfterDiscount = Math.max(
-          0,
-          totalAfterDiscount - selectedCoupon.discountValue
+        totalAfterDiscount = couponService.applyAmountDiscount(
+          totalAfterDiscount,
+          selectedCoupon.discountValue
         );
       } else {
-        totalAfterDiscount = Math.round(
-          totalAfterDiscount * (1 - selectedCoupon.discountValue / 100)
+        totalAfterDiscount = couponService.applyPercentageDiscount(
+          totalAfterDiscount,
+          selectedCoupon.discountValue
         );
       }
     }
@@ -68,6 +70,22 @@ const cartService = {
       totalBeforeDiscount: Math.round(totalBeforeDiscount),
       totalAfterDiscount: Math.round(totalAfterDiscount),
     };
+  },
+
+  // 장바구니 관련 비즈니스 로직
+  calculateOriginalPrice(item: CartItem): number {
+    return item.product.price * item.quantity;
+  },
+
+  calculateItemDiscountRate(
+    originalPrice: number,
+    calculatedTotal: number
+  ): number {
+    return couponService.calculateDiscountRate(originalPrice, calculatedTotal);
+  },
+
+  hasItemDiscount(originalPrice: number, calculatedTotal: number): boolean {
+    return couponService.hasDiscount(originalPrice, calculatedTotal);
   },
 
   addItemToCart: ({

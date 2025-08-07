@@ -1,4 +1,4 @@
-import { formatters } from "../../utils/formatters";
+import { priceUtils } from "../../utils/priceUtils";
 
 interface PriceDisplayProps {
   price: number;
@@ -34,7 +34,7 @@ export default function PriceDisplay({
         </span>
       )}
       <p className={`font-medium text-gray-900 ${sizeClasses[size]}`}>
-        {formatters.price(Math.round(price), false)}
+        {priceUtils.formatCurrency(Math.round(price), false)}
       </p>
     </div>
   );

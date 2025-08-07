@@ -1,5 +1,6 @@
 import { CartItem, Discount } from "../../types";
 import { VALIDATION_LIMITS } from "../utils/constants";
+import { numberUtils } from "../utils/numberUtils";
 
 const discountModel = {
   /**
@@ -40,10 +41,10 @@ const discountModel = {
         cartItem.quantity >= VALIDATION_LIMITS.CART.BULK_PURCHASE_THRESHOLD
     );
     if (hasBulkPurchase) {
-      return Math.min(
+      return numberUtils.findMin([
         baseDiscount + VALIDATION_LIMITS.CART.BULK_PURCHASE_BONUS,
-        VALIDATION_LIMITS.CART.MAX_DISCOUNT_RATE
-      );
+        VALIDATION_LIMITS.CART.MAX_DISCOUNT_RATE,
+      ]);
     }
 
     return baseDiscount;

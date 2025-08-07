@@ -1,9 +1,11 @@
 import { CartItem, Product, ValidationResult } from "../../types";
 import cartModel from "../models/cart";
 import productModel from "../models/product";
-import { formatters } from "../utils";
 import { VALIDATION_LIMITS } from "../utils/constants";
 import { isValidNumericInput } from "../utils/validators";
+import { stockUtils } from "../utils/stockUtils";
+import { priceUtils } from "../utils/priceUtils";
+import { numberUtils } from "../utils/numberUtils";
 
 export type ProductOperationResult =
   | {
@@ -93,7 +95,7 @@ const productService = {
     const cartItem = cartModel.findItem({ cart, productId: product.id });
     const remaining = product.stock - (cartItem?.quantity || 0);
 
-    return Math.max(0, remaining);
+    return numberUtils.clamp(remaining, 0, remaining);
   },
 
   getStockStatus: <P extends Product>({
@@ -110,8 +112,8 @@ const productService = {
     const remainingStock = productService.getRemainingStock({ product, cart });
     return {
       remainingStock,
-      isLowStock: remainingStock <= 5 && remainingStock > 0,
-      isOutOfStock: remainingStock <= 0,
+      isLowStock: productService.isLowStock(remainingStock),
+      isOutOfStock: productService.isOutOfStock(remainingStock),
     };
   },
 
@@ -133,7 +135,7 @@ const productService = {
     }
 
     const price = parseInt(productPrice);
-    if (price < VALIDATION_LIMITS.PRODUCT.MIN_VALUE) {
+    if (!priceUtils.isValidPrice(price)) {
       return {
         isValid: false,
         message: "가격은 0보다 커야 합니다",
@@ -163,23 +165,47 @@ const productService = {
 
     const stock = parseInt(stockValue);
 
-    if (stock < VALIDATION_LIMITS.PRODUCT.MIN_STOCK) {
+    if (!priceUtils.isValidQuantity(stock)) {
       return {
         isValid: false,
-        message: "재고는 0보다 커야 합니다",
+        message: "재고는 1개 이상 99개 이하여야 합니다",
         value: VALIDATION_LIMITS.PRODUCT.MIN_STOCK,
       };
     }
 
-    if (stock > VALIDATION_LIMITS.PRODUCT.MAX_STOCK) {
+    if (!stockUtils.isValidStock(stock)) {
       return {
         isValid: false,
-        message: "재고는 9999개를 초과할 수 없습니다",
+        message: "재고는 999999개를 초과할 수 없습니다",
         value: VALIDATION_LIMITS.PRODUCT.MAX_STOCK,
       };
     }
 
     return { isValid: true, message: "", value: stock };
+  },
+
+  // 재고 관련 비즈니스 로직
+  isLowStock(remainingStock: number): boolean {
+    return remainingStock <= 5 && numberUtils.isPositive(remainingStock);
+  },
+
+  isOutOfStock(remainingStock: number): boolean {
+    return remainingStock <= 0;
+  },
+
+  getStockLevel(remainingStock: number): "out" | "low" | "normal" {
+    if (remainingStock <= 0) return "out";
+    if (remainingStock <= 5) return "low";
+    return "normal";
+  },
+
+  calculateMaxDiscountRate(discounts: any[]): number {
+    if (discounts.length === 0) return 0;
+    return numberUtils.findMax(discounts.map((d) => d.rate));
+  },
+
+  calculateMaxDiscountPercentage(discounts: any[]): number {
+    return Math.round(this.calculateMaxDiscountRate(discounts) * 100);
   },
 };
 

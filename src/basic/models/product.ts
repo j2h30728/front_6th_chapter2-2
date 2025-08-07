@@ -1,4 +1,4 @@
-import { CartItem, Product } from "../../types";
+import { Product } from "../../types";
 
 const productModel = {
   createProduct: <T>(newProduct: T) => {

@@ -161,6 +161,37 @@ const couponService = {
       clearSelectedCoupon();
     }
   },
+
+  // 할인 관련 비즈니스 로직
+  applyPercentageDiscount(basePrice: number, discountPercent: number): number {
+    return Math.round(basePrice * (1 - discountPercent / 100));
+  },
+
+  applyAmountDiscount(basePrice: number, discountAmount: number): number {
+    return Math.max(0, basePrice - discountAmount);
+  },
+
+  calculateDiscountRate(
+    originalPrice: number,
+    discountedPrice: number
+  ): number {
+    if (discountedPrice >= originalPrice) return 0;
+    return Math.round((1 - discountedPrice / originalPrice) * 100);
+  },
+
+  getDiscountAmount(
+    totalBeforeDiscount: number,
+    totalAfterDiscount: number
+  ): number {
+    return Math.max(0, totalBeforeDiscount - totalAfterDiscount);
+  },
+
+  hasDiscount(
+    totalBeforeDiscount: number,
+    totalAfterDiscount: number
+  ): boolean {
+    return totalBeforeDiscount > totalAfterDiscount;
+  },
 };
 
 export default couponService;

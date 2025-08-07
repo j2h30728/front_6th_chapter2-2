@@ -3,7 +3,7 @@ import { ProductWithUI } from "../App";
 import { Coupon } from "../../types";
 import useNotification from "../utils/hooks/useNotification";
 import NotificationToast from "../components/ui/NotificationToast";
-import { formatters } from "../utils/formatters";
+import { priceUtils } from "../utils/priceUtils";
 
 interface AdminPageProps {
   isAdmin: boolean;
@@ -62,7 +62,7 @@ export default function AdminPage({
 
   // [ui] 상품 가격 포맷팅
   const formatPrice = useCallback((price: number) => {
-    return formatters.price(price, false);
+    return priceUtils.formatCurrency(price, false);
   }, []);
 
   // 상품 추가 핸들러

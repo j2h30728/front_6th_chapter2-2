@@ -1,5 +1,5 @@
 import { useReducer, useCallback } from "react";
-import { Coupon, ValidationResult } from "../../types";
+import { Coupon } from "../../types";
 import useLocalStorage from "../utils/hooks/useLocalStorage";
 import couponService from "../services/coupon";
 import couponModel from "../models/coupon";

@@ -1,4 +1,5 @@
 import { Coupon } from "../../types";
+import { stringUtils } from "../utils/stringUtils";
 
 const couponModel = {
   create({ coupon, coupons }: { coupon: Coupon; coupons: Coupon[] }): Coupon[] {
@@ -40,7 +41,7 @@ const couponModel = {
   },
 
   formatCouponCode(counCode: string): string {
-    return counCode.toUpperCase().replace(/\s/g, "");
+    return stringUtils.normalizeCouponCode(counCode);
   },
 
   findByCode(coupons: Coupon[], code: string): Coupon | undefined {
