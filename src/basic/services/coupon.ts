@@ -142,6 +142,25 @@ const couponService = {
       message: "",
     };
   },
+
+  handleCouponSelection({
+    coupons,
+    selectedCode,
+    applyCoupon,
+    clearSelectedCoupon,
+  }: {
+    coupons: Coupon[];
+    selectedCode: string;
+    applyCoupon: (coupon: Coupon) => void;
+    clearSelectedCoupon: () => void;
+  }): void {
+    const coupon = couponModel.findByCode(coupons, selectedCode);
+    if (coupon) {
+      applyCoupon(coupon);
+    } else {
+      clearSelectedCoupon();
+    }
+  },
 };
 
 export default couponService;

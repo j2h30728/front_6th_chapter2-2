@@ -3,6 +3,7 @@ import { CartItem } from "../../../types";
 import Button from "../ui/Button";
 import { XIcon } from "../icons";
 import { formatters } from "../../utils/formatters";
+import { cartItemUtils } from "../../utils/cartItemUtils";
 
 export default function CartList({
   cart,
@@ -54,11 +55,15 @@ const CartItemCard = ({
   calculatedItemTotal: number;
 }) => {
   // 할인률 계산
-  const originalPrice = item.product.price * item.quantity;
-  const hasDiscount = calculatedItemTotal < originalPrice;
-  const discountRate = hasDiscount
-    ? Math.round((1 - calculatedItemTotal / originalPrice) * 100)
-    : 0;
+  const originalPrice = cartItemUtils.calculateOriginalPrice(item);
+  const hasDiscount = cartItemUtils.hasDiscount(
+    originalPrice,
+    calculatedItemTotal
+  );
+  const discountRate = cartItemUtils.calculateDiscountRate(
+    originalPrice,
+    calculatedItemTotal
+  );
 
   return (
     <div key={item.product.id} className="border-b pb-3 last:border-b-0">

@@ -1,7 +1,4 @@
-import { Coupon, ValidationResult } from "../../types";
-import { VALIDATION_LIMITS } from "../utils/constants";
-import { isValidNumericInput } from "../utils/validators";
-import { parsers } from "../utils/parsers";
+import { Coupon } from "../../types";
 
 const couponModel = {
   create({ coupon, coupons }: { coupon: Coupon; coupons: Coupon[] }): Coupon[] {
@@ -44,6 +41,10 @@ const couponModel = {
 
   formatCouponCode(counCode: string): string {
     return counCode.toUpperCase().replace(/\s/g, "");
+  },
+
+  findByCode(coupons: Coupon[], code: string): Coupon | undefined {
+    return coupons.find((coupon) => coupon.code === code);
   },
 };
 
