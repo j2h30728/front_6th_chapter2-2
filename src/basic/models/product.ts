@@ -1,5 +1,5 @@
 import { CartItem, Product, ValidationResult } from "../../types";
-import { VALIDATION_LIMITS } from "../utils/contants";
+import { VALIDATION_LIMITS } from "../utils/constants";
 import { isValidNumericInput } from "../utils/validators";
 
 const productModel = {

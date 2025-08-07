@@ -19,6 +19,8 @@ import couponModel from "./models/coupon";
 import { isValidNumericInput } from "./utils/validators";
 import { useDebounce } from "./utils/hooks/useDebounce";
 import useLocalStorage from "./utils/hooks/useLocalStorage";
+import { formatters } from "./utils/formatters";
+import { parsers } from "./utils/parsers";
 
 export interface ProductWithUI extends Product {
   description?: string;
@@ -141,11 +143,7 @@ const App = () => {
       }
     }
 
-    if (isAdmin) {
-      return `${price.toLocaleString()}원`;
-    }
-
-    return `₩${price.toLocaleString()}`;
+    return formatters.price(price, !isAdmin);
   };
 
   // [ui] 장바구니 총 상품 수 계산
@@ -176,13 +174,18 @@ const App = () => {
       // 재고가 있으면 장바구니에 담는다.
       setCart((prevCart) => {
         // 카트에 상품이 있는지 확인
-        const existingItem = prevCart.find(
-          (item) => item.product.id === product.id
-        );
+        const existingItem = cartModel.findItem({
+          cart: prevCart,
+          productId: product.id,
+        });
 
         // 1. 카트에 상품이 존재하면
         if (existingItem) {
-          const newQuantity = existingItem.quantity + 1;
+          const newQuantity =
+            cartModel.getItemQuantity({
+              cart: prevCart,
+              productId: product.id,
+            }) + 1;
 
           // 카운트 업할 갯수와 재고를 비교
           if (newQuantity > product.stock) {
@@ -459,7 +462,7 @@ const App = () => {
 
   const handleCouponChange = useCallback(
     (value: string) => {
-      const discountValue = parseInt(value) || 0;
+      const discountValue = parsers.safeParseInt(value);
 
       const validation = couponModel.validateDiscountRange({
         discountType: couponForm.discountType,
@@ -716,7 +719,7 @@ const App = () => {
                               if (isValidNumericInput(value)) {
                                 setProductForm({
                                   ...productForm,
-                                  price: value === "" ? 0 : parseInt(value),
+                                  price: parsers.parseNumericInput(value),
                                 });
                               }
                             }}
@@ -739,7 +742,7 @@ const App = () => {
                               if (isValidNumericInput(value)) {
                                 setProductForm({
                                   ...productForm,
-                                  stock: value === "" ? 0 : parseInt(value),
+                                  stock: parsers.parseNumericInput(value),
                                 });
                               }
                             }}
@@ -769,7 +772,7 @@ const App = () => {
                                     ...productForm.discounts,
                                   ];
                                   newDiscounts[index].quantity =
-                                    parseInt(e.target.value) || 0;
+                                    parsers.safeParseInt(e.target.value);
                                   setProductForm({
                                     ...productForm,
                                     discounts: newDiscounts,
@@ -788,7 +791,7 @@ const App = () => {
                                     ...productForm.discounts,
                                   ];
                                   newDiscounts[index].rate =
-                                    (parseInt(e.target.value) || 0) / 100;
+                                    parsers.parseDiscountRate(e.target.value);
                                   setProductForm({
                                     ...productForm,
                                     discounts: newDiscounts,
@@ -888,7 +891,10 @@ const App = () => {
                             <div className="mt-2">
                               <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white text-indigo-700">
                                 {coupon.discountType === "amount"
-                                  ? `${coupon.discountValue.toLocaleString()}원 할인`
+                                  ? `${formatters.price(
+                                      coupon.discountValue,
+                                      false
+                                    )} 할인`
                                   : `${coupon.discountValue}% 할인`}
                               </span>
                             </div>
@@ -1091,7 +1097,10 @@ const App = () => {
                             <option key={coupon.code} value={coupon.code}>
                               {coupon.name} (
                               {coupon.discountType === "amount"
-                                ? `${coupon.discountValue.toLocaleString()}원`
+                                ? `${formatters.price(
+                                    coupon.discountValue,
+                                    false
+                                  )}`
                                 : `${coupon.discountValue}%`}
                               )
                             </option>
@@ -1106,7 +1115,10 @@ const App = () => {
                         <div className="flex justify-between">
                           <span className="text-gray-600">상품 금액</span>
                           <span className="font-medium">
-                            {totals.totalBeforeDiscount.toLocaleString()}원
+                            {formatters.price(
+                              totals.totalBeforeDiscount,
+                              false
+                            )}
                           </span>
                         </div>
                         {totals.totalBeforeDiscount -
@@ -1116,18 +1128,18 @@ const App = () => {
                             <span>할인 금액</span>
                             <span>
                               -
-                              {(
+                              {formatters.price(
                                 totals.totalBeforeDiscount -
-                                totals.totalAfterDiscount
-                              ).toLocaleString()}
-                              원
+                                  totals.totalAfterDiscount,
+                                false
+                              )}
                             </span>
                           </div>
                         )}
                         <div className="flex justify-between py-2 border-t border-gray-200">
                           <span className="font-semibold">결제 예정 금액</span>
                           <span className="font-bold text-lg text-gray-900">
-                            {totals.totalAfterDiscount.toLocaleString()}원
+                            {formatters.price(totals.totalAfterDiscount, false)}
                           </span>
                         </div>
                       </div>
@@ -1137,7 +1149,8 @@ const App = () => {
                         variant="yellow"
                         className="w-full mt-4"
                       >
-                        {totals.totalAfterDiscount.toLocaleString()}원 결제하기
+                        {formatters.price(totals.totalAfterDiscount, false)}{" "}
+                        결제하기
                       </Button>
 
                       <div className="mt-3 text-xs text-gray-500 text-center">

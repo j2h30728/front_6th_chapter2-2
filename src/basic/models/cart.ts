@@ -1,8 +1,22 @@
 import { CartItem, Coupon, Product } from "../../types";
-import { VALIDATION_LIMITS } from "../utils/contants";
+import { VALIDATION_LIMITS } from "../utils/constants";
 import discountModel from "./discount";
 
 const cartModel = {
+  findItem({ cart, productId }: { cart: CartItem[]; productId: string }) {
+    return cart.find((item) => item.product.id === productId);
+  },
+
+  getItemQuantity({
+    cart,
+    productId,
+  }: {
+    cart: CartItem[];
+    productId: string;
+  }) {
+    return this.findItem({ cart, productId })?.quantity ?? 0;
+  },
+
   /**
    * 개별 아이템의 할인 적용 후 총액 계산
    * @param item - 아이템 정보

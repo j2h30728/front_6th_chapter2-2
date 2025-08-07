@@ -1,5 +1,5 @@
 import { CartItem, Discount } from "../../types";
-import { VALIDATION_LIMITS } from "../utils/contants";
+import { VALIDATION_LIMITS } from "../utils/constants";
 
 const discountModel = {
   /**

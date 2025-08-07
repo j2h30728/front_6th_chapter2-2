@@ -1,6 +1,7 @@
 import { Coupon, ValidationResult } from "../../types";
-import { VALIDATION_LIMITS } from "../utils/contants";
+import { VALIDATION_LIMITS } from "../utils/constants";
 import { isValidNumericInput } from "../utils/validators";
+import { parsers } from "../utils/parsers";
 
 const couponModel = {
   validateDiscountRange({
@@ -63,7 +64,11 @@ const couponModel = {
       };
     }
 
-    return { isValid: true, value: parseInt(discountValue), message: "" };
+    return {
+      isValid: true,
+      value: parsers.safeParseInt(discountValue),
+      message: "",
+    };
   },
 
   apply({ coupon, cartTotal }: { coupon: Coupon; cartTotal: number }): {

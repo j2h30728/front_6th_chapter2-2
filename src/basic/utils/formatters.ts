@@ -1,17 +1,11 @@
-export const formatPrice = (
-  price: number,
-  options: Intl.NumberFormatOptions = {}
-): string => {
-  const defaultOptions: Intl.NumberFormatOptions = {
-    style: "currency",
-    currency: "KRW",
-    currencyDisplay: "narrowSymbol",
-  };
+export const formatters = {
+  price: (price: number, showSymbol: boolean = true): string => {
+    if (showSymbol) {
+      return `₩${price.toLocaleString()}`;
+    }
+    return `${price.toLocaleString()}원`;
+  },
 
-  const formatter = new Intl.NumberFormat("ko-KR", {
-    ...defaultOptions,
-    ...options,
-  });
-
-  return formatter.format(price);
+  couponCode: (input: string): string =>
+    input.trim().toUpperCase().replace(/\s+/g, "-"),
 };

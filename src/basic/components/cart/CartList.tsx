@@ -3,6 +3,7 @@ import { CartItem } from "../../../types";
 import Button from "../ui/Button";
 import { XIcon } from "../icons";
 import cartModel from "../../models/cart";
+import { formatters } from "../../utils/formatters";
 
 export default function CartList({
   cart,
@@ -98,7 +99,7 @@ const CartItemCard = ({
             </span>
           )}
           <p className="text-sm font-medium text-gray-900">
-            {Math.round(calculatedItemTotal).toLocaleString()}원
+            {formatters.price(Math.round(calculatedItemTotal), false)}
           </p>
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { CartItem, Product } from "../../../types";
 import { ProductWithUI } from "../../App";
-import { formatPrice } from "../../utils/formatters";
+import { formatters } from "../../utils/formatters";
 import { DefaultImageIcon } from "../icons";
 import Button from "../ui/Button";
 import productModel from "../../models/product";
@@ -85,7 +85,11 @@ export const ProductItem = ({
         )}
         {product.discounts.length > 0 && (
           <span className="absolute top-2 left-2 bg-orange-500 text-white text-xs px-2 py-1 rounded">
-            ~{Math.max(...product.discounts.map((d) => d.rate)) * 100}%
+            ~
+            {Math.round(
+              Math.max(...product.discounts.map((d) => d.rate)) * 100
+            )}
+            %
           </span>
         )}
       </div>
@@ -104,9 +108,7 @@ export const ProductItem = ({
           <p className="text-lg font-bold text-gray-900">
             {remainingStock <= 0
               ? "SOLD OUT"
-              : formatPrice(product.price, {
-                  currencyDisplay: "narrowSymbol",
-                })}
+              : formatters.price(product.price, false)}
           </p>
           {product.discounts.length > 0 && (
             <p className="text-xs text-gray-500">
