@@ -1,24 +1,18 @@
+import { useAtom } from "jotai";
 import SearchBar from "../components/ui/SearchBar";
 import Logo from "../components/ui/Logo";
 import HeaderNav from "./HeaderNav";
+import { isAdminAtom, searchTermAtom, cartAtom } from "../atoms";
 
-import { CartItem } from "../../types";
+export default function Header() {
+  const [isAdmin, setIsAdmin] = useAtom(isAdminAtom);
+  const [searchTerm, setSearchTerm] = useAtom(searchTermAtom);
+  const [cart] = useAtom(cartAtom);
 
-interface HeaderProps {
-  isAdmin: boolean;
-  searchTerm: string;
-  setSearchTerm: (term: string) => void;
-  cart: CartItem[];
-  onToggleAdmin: () => void;
-}
+  const handleToggleAdmin = () => {
+    setIsAdmin(!isAdmin);
+  };
 
-export default function Header({
-  isAdmin,
-  searchTerm,
-  setSearchTerm,
-  cart,
-  onToggleAdmin,
-}: HeaderProps) {
   return (
     <header className="bg-white shadow-sm sticky top-0 z-40 border-b">
       <div className="max-w-7xl mx-auto px-4">
@@ -38,7 +32,7 @@ export default function Header({
           <HeaderNav
             isAdmin={isAdmin}
             cart={cart}
-            onToggleAdmin={onToggleAdmin}
+            onToggleAdmin={handleToggleAdmin}
           />
         </div>
       </div>

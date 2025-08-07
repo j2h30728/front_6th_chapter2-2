@@ -1,47 +1,73 @@
+import { useAtom } from "jotai";
 import { ProductWithUI } from "../App";
-import { CartItem } from "../../types";
-import { Coupon } from "../../types";
 import ProductList from "../components/product/ProductList";
 import Cart from "../components/cart/Cart";
+import {
+  productsAtom,
+  cartAtom,
+  couponsAtom,
+  selectedCouponAtom,
+  cartActionsAtom,
+  completeOrderAtom,
+  couponActionsAtom,
+} from "../atoms";
+import { useDebouncedSearch } from "../hooks/useDebouncedSearch";
+import productService from "../services/product";
+import cartService from "../services/cart";
 
-interface CartPageProps {
-  products: ProductWithUI[];
-  cart: CartItem[];
-  coupons: Coupon[];
-  selectedCoupon: Coupon | null;
-  searchTerm: string;
-  debouncedSearchTerm: string;
-  addToCart: (product: ProductWithUI) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, newQuantity: number) => void;
-  calculateItemTotal: (item: CartItem, cart: CartItem[]) => number;
-  applyCoupon: (coupon: Coupon) => void;
-  clearSelectedCoupon: () => void;
-  completeOrder: () => void;
-  searchProduct: (searchTerm: string) => ProductWithUI[];
-  getStockStatus: (
-    product: ProductWithUI,
-    cart: CartItem[]
-  ) => { remainingStock: number; isLowStock: boolean; isOutOfStock: boolean };
-}
+export default function CartPage() {
+  const [products] = useAtom(productsAtom);
+  const [cart] = useAtom(cartAtom);
+  const [coupons] = useAtom(couponsAtom);
+  const [selectedCoupon] = useAtom(selectedCouponAtom);
+  const { debouncedSearchTerm } = useDebouncedSearch();
 
-export default function CartPage({
-  products,
-  cart,
-  coupons,
-  selectedCoupon,
-  searchTerm,
-  debouncedSearchTerm,
-  addToCart,
-  removeFromCart,
-  updateQuantity,
-  calculateItemTotal,
-  applyCoupon,
-  clearSelectedCoupon,
-  completeOrder,
-  searchProduct,
-  getStockStatus,
-}: CartPageProps) {
+  const [, cartActions] = useAtom(cartActionsAtom);
+  const [, completeOrder] = useAtom(completeOrderAtom);
+  const [, couponActions] = useAtom(couponActionsAtom);
+
+  const handleAddToCart = (product: ProductWithUI) => {
+    cartActions({ type: "ADD_TO_CART", payload: product });
+  };
+
+  const handleRemoveFromCart = (productId: string) => {
+    cartActions({ type: "REMOVE_FROM_CART", payload: productId });
+  };
+
+  const handleUpdateQuantity = (productId: string, quantity: number) => {
+    cartActions({ type: "UPDATE_QUANTITY", payload: { productId, quantity } });
+  };
+
+  const handleApplyCoupon = (coupon: any) => {
+    couponActions({ type: "APPLY_COUPON", payload: coupon });
+  };
+
+  const handleClearSelectedCoupon = () => {
+    couponActions({ type: "CLEAR_SELECTED_COUPON" });
+  };
+
+  const handleCompleteOrder = () => {
+    completeOrder();
+  };
+
+  const searchProduct = (searchTerm: string) => {
+    return productService.searchProduct({
+      products,
+      searchTerm,
+    });
+  };
+
+  const getStockStatus = (product: ProductWithUI, cart: any[]) => {
+    return productService.getStockStatus({
+      product,
+      cart,
+    });
+  };
+
+  const calculateItemTotal = (item: any, cart: any[]) => {
+    return cartService.calculateItemTotal({ item, cart });
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
       <div className="lg:col-span-3">
@@ -57,7 +83,7 @@ export default function CartPage({
             cart={cart}
             products={products}
             debouncedSearchTerm={debouncedSearchTerm}
-            addToCart={addToCart}
+            addToCart={handleAddToCart}
             searchProduct={searchProduct}
             getStockStatus={getStockStatus}
           />
@@ -70,12 +96,12 @@ export default function CartPage({
           cart={cart}
           coupons={coupons}
           selectedCoupon={selectedCoupon}
-          removeFromCart={removeFromCart}
-          updateQuantity={updateQuantity}
+          removeFromCart={handleRemoveFromCart}
+          updateQuantity={handleUpdateQuantity}
           calculateItemTotal={calculateItemTotal}
-          applyCoupon={applyCoupon}
-          clearSelectedCoupon={clearSelectedCoupon}
-          completeOrder={completeOrder}
+          applyCoupon={handleApplyCoupon}
+          clearSelectedCoupon={handleClearSelectedCoupon}
+          completeOrder={handleCompleteOrder}
         />
       </div>
     </div>

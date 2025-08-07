@@ -1,34 +1,27 @@
 import { useState, useCallback } from "react";
+import { useAtom } from "jotai";
 import { ProductWithUI } from "../App";
 import { Coupon } from "../../types";
 import { priceUtils } from "../utils/priceUtils";
 import { useTab } from "../hooks/useTab";
+import { VALIDATION_LIMITS } from "../utils/constants";
+import { isValidNumericInput } from "../utils/validators";
+import { numberUtils } from "../utils/numberUtils";
+import {
+  productsAtom,
+  couponsAtom,
+  productActionsAtom,
+  couponActionsAtom,
+  notificationActionsAtom,
+} from "../atoms";
 
-interface AdminPageProps {
-  isAdmin: boolean;
-  products: ProductWithUI[];
-  coupons: Coupon[];
-  addProduct: (newProduct: Omit<ProductWithUI, "id">) => void;
-  updateProduct: (productId: string, updates: Partial<ProductWithUI>) => void;
-  deleteProduct: (productId: string) => void;
-  addCoupon: (newCoupon: Coupon) => void;
-  deleteCoupon: (couponCode: string) => void;
-  notification: {
-    add: (message: string, type?: "error" | "success" | "warning") => void;
-  };
-}
+export default function AdminPage() {
+  const [products] = useAtom(productsAtom);
+  const [coupons] = useAtom(couponsAtom);
+  const [, productActions] = useAtom(productActionsAtom);
+  const [, couponActions] = useAtom(couponActionsAtom);
+  const [, notificationActions] = useAtom(notificationActionsAtom);
 
-export default function AdminPage({
-  isAdmin,
-  products,
-  coupons,
-  addProduct,
-  updateProduct,
-  deleteProduct,
-  addCoupon,
-  deleteCoupon,
-  notification,
-}: AdminPageProps) {
   // 탭 관리
   const { activeTab, setActiveTab } = useTab<"products" | "coupons">(
     "products"
@@ -68,46 +61,44 @@ export default function AdminPage({
   // 상품 추가 핸들러
   const handleAddProduct = useCallback(
     (newProduct: Omit<ProductWithUI, "id">) => {
-      addProduct(newProduct);
-      notification.add("상품이 추가되었습니다.", "success");
+      productActions({ type: "ADD_PRODUCT", payload: newProduct });
     },
-    [addProduct, notification.add]
+    [productActions]
   );
 
   // 상품 수정 핸들러
   const handleUpdateProduct = useCallback(
     (productId: string, updates: Partial<ProductWithUI>) => {
-      updateProduct(productId, updates);
-      notification.add("상품이 수정되었습니다.", "success");
+      productActions({
+        type: "UPDATE_PRODUCT",
+        payload: { productId, updates },
+      });
     },
-    [updateProduct, notification.add]
+    [productActions]
   );
 
   // 상품 삭제 핸들러
   const handleDeleteProduct = useCallback(
     (productId: string) => {
-      deleteProduct(productId);
-      notification.add("상품이 삭제되었습니다.", "success");
+      productActions({ type: "DELETE_PRODUCT", payload: productId });
     },
-    [deleteProduct, notification.add]
+    [productActions]
   );
 
   // 쿠폰 추가 핸들러
   const handleAddCoupon = useCallback(
     (newCoupon: Coupon) => {
-      addCoupon(newCoupon);
-      notification.add("쿠폰이 추가되었습니다.", "success");
+      couponActions({ type: "ADD_COUPON", payload: newCoupon });
     },
-    [addCoupon, notification.add]
+    [couponActions]
   );
 
   // 쿠폰 삭제 핸들러
   const handleDeleteCoupon = useCallback(
     (couponCode: string) => {
-      deleteCoupon(couponCode);
-      notification.add("쿠폰이 삭제되었습니다.", "success");
+      couponActions({ type: "DELETE_COUPON", payload: couponCode });
     },
-    [deleteCoupon, notification.add]
+    [couponActions]
   );
 
   // 상품 폼 제출 핸들러
@@ -158,10 +149,6 @@ export default function AdminPage({
     });
     setShowProductForm(true);
   };
-
-  if (!isAdmin) {
-    return null;
-  }
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -332,7 +319,7 @@ export default function AdminPage({
                       value={productForm.price === 0 ? "" : productForm.price}
                       onChange={(e) => {
                         const value = e.target.value;
-                        if (value === "" || /^\d+$/.test(value)) {
+                        if (isValidNumericInput(value)) {
                           setProductForm({
                             ...productForm,
                             price: value === "" ? 0 : parseInt(value),
@@ -343,9 +330,20 @@ export default function AdminPage({
                         const value = e.target.value;
                         if (value === "") {
                           setProductForm({ ...productForm, price: 0 });
-                        } else if (parseInt(value) < 0) {
-                          notification.add("가격은 0보다 커야 합니다", "error");
-                          setProductForm({ ...productForm, price: 0 });
+                        } else if (
+                          !numberUtils.isNonNegative(parseInt(value))
+                        ) {
+                          notificationActions({
+                            type: "ADD",
+                            payload: {
+                              message: `가격은 ${VALIDATION_LIMITS.PRODUCT.MIN_VALUE}보다 커야 합니다`,
+                              type: "error",
+                            },
+                          });
+                          setProductForm({
+                            ...productForm,
+                            price: VALIDATION_LIMITS.PRODUCT.MIN_VALUE,
+                          });
                         }
                       }}
                       className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border"
@@ -362,7 +360,7 @@ export default function AdminPage({
                       value={productForm.stock === 0 ? "" : productForm.stock}
                       onChange={(e) => {
                         const value = e.target.value;
-                        if (value === "" || /^\d+$/.test(value)) {
+                        if (isValidNumericInput(value)) {
                           setProductForm({
                             ...productForm,
                             stock: value === "" ? 0 : parseInt(value),
@@ -373,15 +371,27 @@ export default function AdminPage({
                         const value = e.target.value;
                         if (value === "") {
                           setProductForm({ ...productForm, stock: 0 });
-                        } else if (parseInt(value) < 0) {
-                          notification.add("재고는 0보다 커야 합니다", "error");
-                          setProductForm({ ...productForm, stock: 0 });
-                        } else if (parseInt(value) > 9999) {
-                          notification.add(
-                            "재고는 9999개를 초과할 수 없습니다",
-                            "error"
+                        } else {
+                          const stockValue = parseInt(value);
+                          const clampedStock = numberUtils.clamp(
+                            stockValue,
+                            VALIDATION_LIMITS.PRODUCT.MIN_STOCK,
+                            VALIDATION_LIMITS.PRODUCT.MAX_STOCK
                           );
-                          setProductForm({ ...productForm, stock: 9999 });
+
+                          if (stockValue !== clampedStock) {
+                            notificationActions({
+                              type: "ADD",
+                              payload: {
+                                message: `재고는 ${VALIDATION_LIMITS.PRODUCT.MIN_STOCK}개 이상 ${VALIDATION_LIMITS.PRODUCT.MAX_STOCK}개 이하여야 합니다`,
+                                type: "error",
+                              },
+                            });
+                            setProductForm({
+                              ...productForm,
+                              stock: clampedStock,
+                            });
+                          }
                         }
                       }}
                       className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 border"
@@ -662,7 +672,7 @@ export default function AdminPage({
                         }
                         onChange={(e) => {
                           const value = e.target.value;
-                          if (value === "" || /^\d+$/.test(value)) {
+                          if (isValidNumericInput(value)) {
                             setCouponForm({
                               ...couponForm,
                               discountValue: value === "" ? 0 : parseInt(value),
@@ -671,36 +681,48 @@ export default function AdminPage({
                         }}
                         onBlur={(e) => {
                           const value = parseInt(e.target.value) || 0;
+                          const limits = VALIDATION_LIMITS.DISCOUNT;
+
                           if (couponForm.discountType === "percentage") {
-                            if (value > 100) {
-                              notification.add(
-                                "할인율은 100%를 초과할 수 없습니다",
-                                "error"
-                              );
-                              setCouponForm({
-                                ...couponForm,
-                                discountValue: 100,
+                            const clampedValue = numberUtils.clamp(
+                              value,
+                              limits.MIN_VALUE,
+                              limits.MAX_PERCENTAGE
+                            );
+
+                            if (value !== clampedValue) {
+                              notificationActions({
+                                type: "ADD",
+                                payload: {
+                                  message: "할인율은 100%를 초과할 수 없습니다",
+                                  type: "error",
+                                },
                               });
-                            } else if (value < 0) {
                               setCouponForm({
                                 ...couponForm,
-                                discountValue: 0,
+                                discountValue: clampedValue,
                               });
                             }
                           } else {
-                            if (value > 100000) {
-                              notification.add(
-                                "할인 금액은 100,000원을 초과할 수 없습니다",
-                                "error"
-                              );
-                              setCouponForm({
-                                ...couponForm,
-                                discountValue: 100000,
+                            const clampedValue = numberUtils.clamp(
+                              value,
+                              limits.MIN_VALUE,
+                              limits.MAX_AMOUNT
+                            );
+
+                            if (value !== clampedValue) {
+                              notificationActions({
+                                type: "ADD",
+                                payload: {
+                                  message: `할인 금액은 ${
+                                    limits.MIN_VALUE
+                                  }원 이상 ${limits.MAX_AMOUNT.toLocaleString()}원 이하여야 합니다`,
+                                  type: "error",
+                                },
                               });
-                            } else if (value < 0) {
                               setCouponForm({
                                 ...couponForm,
-                                discountValue: 0,
+                                discountValue: clampedValue,
                               });
                             }
                           }

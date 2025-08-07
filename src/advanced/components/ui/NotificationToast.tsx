@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useAtom } from "jotai";
 import { XIcon } from "../icons";
 import Button from "./Button";
+import { notificationsAtom, notificationActionsAtom } from "../../atoms";
 
 export interface Notification {
   id: string;
@@ -8,15 +10,25 @@ export interface Notification {
   type: "error" | "success" | "warning";
 }
 
-interface NotificationToastProps {
-  notifications: Notification[];
-  onRemove: (id: string) => void;
-}
+const NotificationToast: React.FC = () => {
+  const [notifications] = useAtom(notificationsAtom);
+  const [, notificationActions] = useAtom(notificationActionsAtom);
 
-const NotificationToast: React.FC<NotificationToastProps> = ({
-  notifications,
-  onRemove,
-}) => {
+  const handleRemove = (id: string) => {
+    notificationActions({ type: "REMOVE", payload: { id } });
+  };
+
+  // 3초 후 자동으로 알림 제거
+  useEffect(() => {
+    notifications.forEach((notification) => {
+      const timer = setTimeout(() => {
+        handleRemove(notification.id);
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    });
+  }, [notifications]);
+
   if (notifications.length === 0) return null;
 
   return (
@@ -34,7 +46,7 @@ const NotificationToast: React.FC<NotificationToastProps> = ({
         >
           <span className="mr-2 flex-1">{notification.message}</span>
           <Button
-            onClick={() => onRemove(notification.id)}
+            onClick={() => handleRemove(notification.id)}
             variant="ghost"
             size="small"
             className="text-white hover:text-gray-200 p-1 flex items-center justify-center ml-2"
