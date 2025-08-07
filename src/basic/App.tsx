@@ -23,6 +23,7 @@ import cartService from "./services/cart";
 import productService from "./services/product";
 import couponService from "./services/coupon";
 import { useCart } from "./hooks/useCart";
+import { useCoupon } from "./hooks/useCoupon";
 
 export interface ProductWithUI extends Product {
   description?: string;
@@ -90,15 +91,12 @@ const App = () => {
   );
 
   // useCart 훅 사용
-  const {
-    cart,
-    selectedCoupon,
-    addToCart,
-    removeFromCart,
-    updateQuantity,
-    setSelectedCoupon,
-    completeOrder,
-  } = useCart();
+  const { cart, addToCart, removeFromCart, updateQuantity, completeOrder } =
+    useCart();
+
+  // useCoupon 훅 사용
+  const { selectedCoupon, setSelectedCoupon: updateSelectedCoupon } =
+    useCoupon();
 
   // 어드민
   const [isAdmin, setIsAdmin] = useState(false);
@@ -231,10 +229,10 @@ const App = () => {
       }
 
       // 실제 선택한 쿠폰 설정
-      setSelectedCoupon(coupon);
+      updateSelectedCoupon(coupon);
       notification.add("쿠폰이 적용되었습니다.", "success");
     },
-    [cart, selectedCoupon, setSelectedCoupon, notification.add]
+    [cart, selectedCoupon, updateSelectedCoupon, notification.add]
   );
 
   // [order] 주문 완료 처리
@@ -319,14 +317,14 @@ const App = () => {
       if (result.status === "success") {
         setCoupons(result.value);
 
-        // 선택한 쿠폰과 인자로 넘겨주는 쿠폰이 같을경우에는 선택 쿠폰 헤제
+        // 선택한 쿠폰과 인자로 넘겨주는 쿠폰이 같을경우에는 선택 쿠폰 해제
         if (selectedCoupon?.code === couponCode) {
-          setSelectedCoupon(null);
+          updateSelectedCoupon(null);
         }
       }
       notification.add(result.message, result.status);
     },
-    [coupons, selectedCoupon, notification.add]
+    [coupons, selectedCoupon, updateSelectedCoupon, notification.add]
   );
 
   // [product] 상품 추가/수정 폼 제출 처리
@@ -1050,7 +1048,7 @@ const App = () => {
                               (c) => c.code === e.target.value
                             );
                             if (coupon) applyCoupon(coupon);
-                            else setSelectedCoupon(null);
+                            else updateSelectedCoupon(null);
                           }}
                         >
                           <option value="">쿠폰 선택</option>
