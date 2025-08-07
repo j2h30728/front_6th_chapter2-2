@@ -21,6 +21,7 @@ import { useDebounce } from "./utils/hooks/useDebounce";
 import useLocalStorage from "./utils/hooks/useLocalStorage";
 import { formatters } from "./utils/formatters";
 import { parsers } from "./utils/parsers";
+import cartService from "./services/cart";
 
 export interface ProductWithUI extends Product {
   description?: string;
@@ -197,7 +198,7 @@ const App = () => {
           }
 
           // 재고가 있다면 카트에 갯수를 추가
-          return cartModel.updateCartItemQuantity({
+          return cartModel.updateItemQuantity({
             cart: prevCart,
             productId: product.id,
             newQuantity: newQuantity,
@@ -205,7 +206,7 @@ const App = () => {
         }
 
         // 2. 장바구니에 새로운 상품을 담기
-        return cartModel.addItemToCart({
+        return cartModel.addNewItem({
           cart: prevCart,
           product,
         });
@@ -219,7 +220,7 @@ const App = () => {
   // [cart] 카트에서 상품을 제거
   const removeFromCart = useCallback((productId: string) => {
     setCart((prevCart) =>
-      cartModel.removeItemFromCart({
+      cartModel.removeItem({
         cart: prevCart,
         productId,
       })
@@ -248,7 +249,7 @@ const App = () => {
 
       // 상품 재고가 충분하다면 카트에 담기
       setCart((prevCart) =>
-        cartModel.updateCartItemQuantity({
+        cartModel.updateItemQuantity({
           cart: prevCart,
           newQuantity,
           productId,
@@ -262,7 +263,7 @@ const App = () => {
   const applyCoupon = useCallback(
     (coupon: Coupon) => {
       // 현재 장바구니에 존재하는 할인후 전체 가격
-      const currentTotal = cartModel.calculateCartTotal({
+      const currentTotal = cartService.calculateCartTotal({
         cart,
         selectedCoupon,
       }).totalAfterDiscount;
@@ -435,7 +436,7 @@ const App = () => {
   };
 
   // [cart] 장바구니 총액 계산
-  const totals = cartModel.calculateCartTotal({
+  const totals = cartService.calculateCartTotal({
     cart,
     selectedCoupon,
   });
