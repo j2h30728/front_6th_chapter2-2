@@ -22,7 +22,7 @@ import { parsers } from "./utils/parsers";
 import cartService from "./services/cart";
 import productService from "./services/product";
 import couponService from "./services/coupon";
-import orderService from "./services/order";
+import { useCart } from "./hooks/useCart";
 
 export interface ProductWithUI extends Product {
   description?: string;
@@ -84,14 +84,21 @@ const App = () => {
     "products",
     initialProducts
   );
-  const [cart, setCart] = useLocalStorage<CartItem[]>("cart", []);
   const [coupons, setCoupons] = useLocalStorage<Coupon[]>(
     "coupons",
     initialCoupons
   );
 
-  // 선택된 쿠폰 저장
-  const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
+  // useCart 훅 사용
+  const {
+    cart,
+    selectedCoupon,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    setSelectedCoupon,
+    completeOrder,
+  } = useCart();
 
   // 어드민
   const [isAdmin, setIsAdmin] = useState(false);
@@ -168,55 +175,40 @@ const App = () => {
   // useLocalStorage 훅이 이미 로컬스토리지를 관리하므로 추가 useEffect는 제거
 
   // [cart] 장바구니 담기 로직
-  const addToCart = useCallback(
+  const handleAddToCart = useCallback(
     (product: ProductWithUI) => {
-      const result = cartService.addItemToCart({
-        cart,
-        product,
-      });
+      const result = addToCart(product);
       if (result.status === "error") {
         notification.add(result.message, result.status);
         return;
       }
-
-      setCart(result.value);
       notification.add("장바구니에 담았습니다", "success");
     },
-    [cart, notification.add]
+    [addToCart, notification.add]
   );
 
   // [cart] 카트에서 상품을 제거
-  const removeFromCart = useCallback(
+  const handleRemoveFromCart = useCallback(
     (productId: string) => {
-      const result = cartService.removeItemFromCart({
-        cart,
-        productId,
-      });
+      const result = removeFromCart(productId);
       if (result.status === "error") {
         notification.add(result.message, result.status);
         return;
       }
-      setCart(result.value);
     },
-    [cart, notification.add]
+    [removeFromCart, notification.add]
   );
 
   // [cart] 장바구니 수량 업데이트
-  const updateQuantity = useCallback(
+  const handleUpdateQuantity = useCallback(
     (productId: string, newQuantity: number) => {
-      const result = cartService.updateItemQuantity({
-        cart,
-        productId,
-        newQuantity,
-      });
+      const result = updateQuantity(productId, newQuantity);
       if (result.status === "error") {
         notification.add(result.message, result.status);
         return;
       }
-
-      setCart(result.value);
     },
-    [cart, notification.add]
+    [updateQuantity, notification.add]
   );
 
   // [coupon] 쿠폰 적용하기
@@ -242,22 +234,19 @@ const App = () => {
       setSelectedCoupon(coupon);
       notification.add("쿠폰이 적용되었습니다.", "success");
     },
-    [notification.add, selectedCoupon]
+    [cart, selectedCoupon, setSelectedCoupon, notification.add]
   );
 
   // [order] 주문 완료 처리
-  const completeOrder = useCallback(() => {
-    const result = orderService.completeOrder({ cart });
+  const handleCompleteOrder = useCallback(() => {
+    const result = completeOrder();
 
     if (result.status === "success") {
       notification.add(result.message, result.status);
-      // 주문 완료후 장바구니와 선택한 쿠폰 초기화
-      setCart([]);
-      setSelectedCoupon(null);
     } else {
       notification.add(result.message, result.status);
     }
-  }, [cart, notification.add]);
+  }, [completeOrder, notification.add]);
 
   // [product] 상품목록에 상품 추가하기
   const addProduct = useCallback(
@@ -1022,7 +1011,7 @@ const App = () => {
                   cart={cart}
                   products={products}
                   debouncedSearchTerm={debouncedSearchTerm}
-                  addToCart={addToCart}
+                  addToCart={handleAddToCart}
                 />
               </section>
             </div>
@@ -1036,8 +1025,8 @@ const App = () => {
                   </h2>
                   <CartList
                     cart={cart}
-                    removeFromCart={removeFromCart}
-                    updateQuantity={updateQuantity}
+                    removeFromCart={handleRemoveFromCart}
+                    updateQuantity={handleUpdateQuantity}
                   />
                 </section>
 
@@ -1117,7 +1106,7 @@ const App = () => {
                       </div>
 
                       <Button
-                        onClick={completeOrder}
+                        onClick={handleCompleteOrder}
                         variant="yellow"
                         className="w-full mt-4"
                       >

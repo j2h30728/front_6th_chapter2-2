@@ -14,7 +14,7 @@ export default function ProductList({
   cart: CartItem[];
   products: ProductWithUI[];
   debouncedSearchTerm: string;
-  addToCart: (product: Product) => void;
+  addToCart: (product: ProductWithUI) => void;
 }) {
   const filteredProducts = debouncedSearchTerm
     ? productService.searchProduct({
@@ -64,7 +64,7 @@ export const ProductItem = ({
   remainingStock: number;
   isLowStock: boolean;
   isOutOfStock: boolean;
-  addToCart: (product: Product) => void;
+  addToCart: (product: ProductWithUI) => void;
 }) => {
   return (
     <div
