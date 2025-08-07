@@ -1,6 +1,6 @@
 import { CartItem, Coupon, Product } from "../../types";
 import cartModel from "../models/cart";
-import discountModel from "../models/discount";
+import discountService from "./discount";
 import productService from "./product";
 
 export type CartOperationResult =
@@ -29,7 +29,7 @@ const cartService = {
     item: CartItem;
     cart: CartItem[];
   }): number {
-    return discountModel.calculateItemTotal({ item, cart });
+    return discountService.calculateItemTotal({ item, cart });
   },
 
   calculateCartTotal({

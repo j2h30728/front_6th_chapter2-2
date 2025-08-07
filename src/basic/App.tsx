@@ -22,6 +22,7 @@ import { parsers } from "./utils/parsers";
 import cartService from "./services/cart";
 import productService from "./services/product";
 import couponService from "./services/coupon";
+import orderService from "./services/order";
 
 export interface ProductWithUI extends Product {
   description?: string;
@@ -246,17 +247,17 @@ const App = () => {
 
   // [order] 주문 완료 처리
   const completeOrder = useCallback(() => {
-    // 주문 번호
-    const orderNumber = `ORD-${Date.now()}`;
-    notification.add(
-      `주문이 완료되었습니다. 주문번호: ${orderNumber}`,
-      "success"
-    );
+    const result = orderService.completeOrder({ cart });
 
-    // 주문 완료후 장바구니와 선택한 쿠폰 초기화
-    setCart([]);
-    setSelectedCoupon(null);
-  }, [notification.add]);
+    if (result.status === "success") {
+      notification.add(result.message, result.status);
+      // 주문 완료후 장바구니와 선택한 쿠폰 초기화
+      setCart([]);
+      setSelectedCoupon(null);
+    } else {
+      notification.add(result.message, result.status);
+    }
+  }, [cart, notification.add]);
 
   // [product] 상품목록에 상품 추가하기
   const addProduct = useCallback(
