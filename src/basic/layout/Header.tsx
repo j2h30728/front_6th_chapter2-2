@@ -2,11 +2,13 @@ import { CartIcon } from "../components/icons";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 
+import { CartItem } from "../../types";
+
 interface HeaderProps {
   isAdmin: boolean;
   searchTerm: string;
   setSearchTerm: (term: string) => void;
-  totalItemCount: number;
+  cart: CartItem[];
   onToggleAdmin: () => void;
 }
 
@@ -14,9 +16,11 @@ export default function Header({
   isAdmin,
   searchTerm,
   setSearchTerm,
-  totalItemCount,
+  cart,
   onToggleAdmin,
 }: HeaderProps) {
+  // 장바구니 총 상품 수 계산
+  const totalItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   return (
     <header className="bg-white shadow-sm sticky top-0 z-40 border-b">
       <div className="max-w-7xl mx-auto px-4">

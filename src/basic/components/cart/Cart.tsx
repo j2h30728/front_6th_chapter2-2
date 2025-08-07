@@ -4,15 +4,12 @@ import CartList from "./CartList";
 import { ShoppingBagIcon } from "../icons";
 import Button from "../ui/Button";
 import { formatters } from "../../utils/formatters";
+import cartService from "../../services/cart";
 
 interface CartProps {
   cart: CartItem[];
   coupons: Coupon[];
   selectedCoupon: Coupon | null;
-  totals: {
-    totalBeforeDiscount: number;
-    totalAfterDiscount: number;
-  };
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, newQuantity: number) => void;
   calculateItemTotal: (item: CartItem, cart: CartItem[]) => number;
@@ -25,7 +22,6 @@ export default function Cart({
   cart,
   coupons,
   selectedCoupon,
-  totals,
   removeFromCart,
   updateQuantity,
   calculateItemTotal,
@@ -33,6 +29,11 @@ export default function Cart({
   clearSelectedCoupon,
   completeOrder,
 }: CartProps) {
+  // 장바구니 총액 계산
+  const totals = cartService.calculateCartTotal({
+    cart,
+    selectedCoupon,
+  });
   return (
     <div className="sticky top-24 space-y-4">
       <section className="bg-white rounded-lg border border-gray-200 p-4">

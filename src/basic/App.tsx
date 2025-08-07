@@ -1,8 +1,7 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { Coupon, Product } from "../types";
 import useNotification from "./utils/hooks/useNotification";
 import NotificationToast from "./components/ui/NotificationToast";
-import { useDebounce } from "./utils/hooks/useDebounce";
 import cartService from "./services/cart";
 import { useCart } from "./hooks/useCart";
 import { useCoupon } from "./hooks/useCoupon";
@@ -57,20 +56,6 @@ const App = () => {
 
   // 검색어
   const [searchTerm, setSearchTerm] = useState("");
-
-  // 디바운스된 검색어
-  const debouncedSearchTerm = useDebounce(searchTerm);
-
-  // [ui] 장바구니 총 상품 수 계산
-  const [totalItemCount, setTotalItemCount] = useState(0);
-
-  // [ui] 장바구니 상품 수량 업데이트
-  useEffect(() => {
-    const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-    setTotalItemCount(count);
-  }, [cart]);
-
-  // useLocalStorage 훅이 이미 로컬스토리지를 관리하므로 추가 useEffect는 제거
 
   // [cart] 장바구니 담기 로직
   const handleAddToCart = useCallback(
@@ -186,12 +171,6 @@ const App = () => {
     [deleteCoupon, notification.add]
   );
 
-  // [cart] 장바구니 총액 계산
-  const totals = cartService.calculateCartTotal({
-    cart,
-    selectedCoupon,
-  });
-
   return (
     <div className="min-h-screen bg-gray-50">
       <NotificationToast
@@ -202,7 +181,7 @@ const App = () => {
         isAdmin={isAdmin}
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
-        totalItemCount={totalItemCount}
+        cart={cart}
         onToggleAdmin={() => setIsAdmin(!isAdmin)}
       />
 
@@ -224,8 +203,7 @@ const App = () => {
             cart={cart}
             coupons={coupons}
             selectedCoupon={selectedCoupon}
-            totals={totals}
-            debouncedSearchTerm={debouncedSearchTerm}
+            searchTerm={searchTerm}
             addToCart={handleAddToCart}
             removeFromCart={handleRemoveFromCart}
             updateQuantity={handleUpdateQuantity}
