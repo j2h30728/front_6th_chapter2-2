@@ -18,6 +18,7 @@ import productModel from "./models/product";
 import couponModel from "./models/coupon";
 import { isValidNumericInput } from "./utils/validators";
 import { useDebounce } from "./utils/hooks/useDebounce";
+import useLocalStorage from "./utils/hooks/useLocalStorage";
 
 export interface ProductWithUI extends Product {
   description?: string;
@@ -75,44 +76,15 @@ const initialCoupons: Coupon[] = [
 ];
 
 const App = () => {
-  // 상품 목록 저장
-  const [products, setProducts] = useState<ProductWithUI[]>(() => {
-    const saved = localStorage.getItem("products");
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return initialProducts;
-      }
-    }
-    return initialProducts;
-  });
-
-  // 장바구니 목록 저장
-  const [cart, setCart] = useState<CartItem[]>(() => {
-    const saved = localStorage.getItem("cart");
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return [];
-      }
-    }
-    return [];
-  });
-
-  // 쿠폰 목록 저장
-  const [coupons, setCoupons] = useState<Coupon[]>(() => {
-    const saved = localStorage.getItem("coupons");
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return initialCoupons;
-      }
-    }
-    return initialCoupons;
-  });
+  const [products, setProducts] = useLocalStorage<ProductWithUI[]>(
+    "products",
+    initialProducts
+  );
+  const [cart, setCart] = useLocalStorage<CartItem[]>("cart", []);
+  const [coupons, setCoupons] = useLocalStorage<Coupon[]>(
+    "coupons",
+    initialCoupons
+  );
 
   // 선택된 쿠폰 저장
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
@@ -185,24 +157,7 @@ const App = () => {
     setTotalItemCount(count);
   }, [cart]);
 
-  // 상품 목록을 로컬스토리지에 저장
-  useEffect(() => {
-    localStorage.setItem("products", JSON.stringify(products));
-  }, [products]);
-
-  // 쿠폰 목록을 로컬스토리지에 저장
-  useEffect(() => {
-    localStorage.setItem("coupons", JSON.stringify(coupons));
-  }, [coupons]);
-
-  // 장바구나에 하나라도 저장되면 로컬스토리지에 저장하거나, 없으면 제거
-  useEffect(() => {
-    if (cart.length > 0) {
-      localStorage.setItem("cart", JSON.stringify(cart));
-    } else {
-      localStorage.removeItem("cart");
-    }
-  }, [cart]);
+  // useLocalStorage 훅이 이미 로컬스토리지를 관리하므로 추가 useEffect는 제거
 
   // [cart] 장바구니 담기 로직
   const addToCart = useCallback(
