@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { CartItem, Coupon, Product } from "../types";
+import { Coupon, Product } from "../types";
 import Button from "./components/ui/Button";
 import Input from "./components/ui/Input";
 import {
@@ -13,7 +13,6 @@ import ProductList from "./components/product/ProductList";
 import CartList from "./components/cart/CartList";
 import useNotification from "./utils/hooks/useNotification";
 import NotificationToast from "./components/ui/NotificationToast";
-import couponModel from "./models/coupon";
 import { isValidNumericInput } from "./utils/validators";
 import { useDebounce } from "./utils/hooks/useDebounce";
 import useLocalStorage from "./utils/hooks/useLocalStorage";
@@ -21,7 +20,6 @@ import { formatters } from "./utils/formatters";
 import { parsers } from "./utils/parsers";
 import cartService from "./services/cart";
 import productService from "./services/product";
-import couponService from "./services/coupon";
 import { useCart } from "./hooks/useCart";
 import { useCoupon } from "./hooks/useCoupon";
 
@@ -65,38 +63,28 @@ const initialProducts: ProductWithUI[] = [
   },
 ];
 
-const initialCoupons: Coupon[] = [
-  {
-    name: "5000원 할인",
-    code: "AMOUNT5000",
-    discountType: "amount",
-    discountValue: 5000,
-  },
-  {
-    name: "10% 할인",
-    code: "PERCENT10",
-    discountType: "percentage",
-    discountValue: 10,
-  },
-];
-
 const App = () => {
   const [products, setProducts] = useLocalStorage<ProductWithUI[]>(
     "products",
     initialProducts
   );
-  const [coupons, setCoupons] = useLocalStorage<Coupon[]>(
-    "coupons",
-    initialCoupons
-  );
-
   // useCart 훅 사용
   const { cart, addToCart, removeFromCart, updateQuantity, completeOrder } =
     useCart();
 
   // useCoupon 훅 사용
-  const { selectedCoupon, setSelectedCoupon: updateSelectedCoupon } =
-    useCoupon();
+  const {
+    selectedCoupon,
+    coupons,
+    setSelectedCoupon: updateSelectedCoupon,
+    applyCoupon,
+    addCoupon,
+    deleteCoupon,
+    validateCoupon,
+    formatCouponCode,
+    initializeCoupon,
+    clearSelectedCoupon,
+  } = useCoupon();
 
   // 어드민
   const [isAdmin, setIsAdmin] = useState(false);
@@ -210,7 +198,7 @@ const App = () => {
   );
 
   // [coupon] 쿠폰 적용하기
-  const applyCoupon = useCallback(
+  const handleApplyCoupon = useCallback(
     (coupon: Coupon) => {
       // 현재 장바구니에 존재하는 할인후 전체 가격
       const currentTotal = cartService.calculateCartTotal({
@@ -218,21 +206,16 @@ const App = () => {
         selectedCoupon,
       }).totalAfterDiscount;
 
-      // 할인후 전체 가격이 만원 미만이고, 퍼센트 할인 쿠폰일 경우
-      const validation = couponService.apply({
-        coupon,
-        cartTotal: currentTotal,
-      });
+      // 쿠폰 적용
+      const validation = applyCoupon(coupon, currentTotal);
       if (!validation.isValid) {
         notification.add(validation.message, "error");
         return;
       }
 
-      // 실제 선택한 쿠폰 설정
-      updateSelectedCoupon(coupon);
       notification.add("쿠폰이 적용되었습니다.", "success");
     },
-    [cart, selectedCoupon, updateSelectedCoupon, notification.add]
+    [cart, selectedCoupon, applyCoupon, notification.add]
   );
 
   // [order] 주문 완료 처리
@@ -293,38 +276,21 @@ const App = () => {
   );
 
   // [coupon] 쿠폰 추가하기
-  const addCoupon = useCallback(
+  const handleAddCoupon = useCallback(
     (newCoupon: Coupon) => {
-      const result = couponService.addCoupon({
-        coupons,
-        newCoupon,
-      });
-      if (result.status === "success") {
-        setCoupons(result.value);
-      }
+      const result = addCoupon(newCoupon);
       notification.add(result.message, result.status);
     },
-    [coupons, notification.add]
+    [addCoupon, notification.add]
   );
 
   // [coupon] 쿠폰 제거하기
-  const deleteCoupon = useCallback(
+  const handleDeleteCoupon = useCallback(
     (couponCode: string) => {
-      const result = couponService.deleteCoupon({
-        coupons,
-        couponCode,
-      });
-      if (result.status === "success") {
-        setCoupons(result.value);
-
-        // 선택한 쿠폰과 인자로 넘겨주는 쿠폰이 같을경우에는 선택 쿠폰 해제
-        if (selectedCoupon?.code === couponCode) {
-          updateSelectedCoupon(null);
-        }
-      }
+      const result = deleteCoupon(couponCode);
       notification.add(result.message, result.status);
     },
-    [coupons, selectedCoupon, updateSelectedCoupon, notification.add]
+    [deleteCoupon, notification.add]
   );
 
   // [product] 상품 추가/수정 폼 제출 처리
@@ -366,14 +332,9 @@ const App = () => {
   const handleCouponSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // 쿠폰추가
-    addCoupon(couponForm);
+    handleAddCoupon(couponForm);
     // 쿠폰 폼 초기화
-    setCouponForm({
-      name: "",
-      code: "",
-      discountType: "amount",
-      discountValue: 0,
-    });
+    setCouponForm(initializeCoupon());
     setShowCouponForm(false);
   };
 
@@ -423,10 +384,7 @@ const App = () => {
     (value: string) => {
       const discountValue = parsers.safeParseInt(value);
 
-      const validation = couponService.validateDiscountRange({
-        discountType: couponForm.discountType,
-        discountValue,
-      });
+      const validation = validateCoupon(couponForm.discountType, discountValue);
 
       if (!validation.isValid) {
         notification.add(validation.message, "error");
@@ -436,7 +394,7 @@ const App = () => {
         discountValue: validation.value,
       });
     },
-    [couponForm, notification.add]
+    [couponForm, validateCoupon, notification.add]
   );
 
   const handleProductPriceChange = useCallback(
@@ -859,7 +817,7 @@ const App = () => {
                             </div>
                           </div>
                           <Button
-                            onClick={() => deleteCoupon(coupon.code)}
+                            onClick={() => handleDeleteCoupon(coupon.code)}
                             variant="ghost"
                             size="small"
                             className="text-gray-400 hover:text-red-600 transition-colors p-1 flex items-center justify-center"
@@ -913,9 +871,7 @@ const App = () => {
                               onChange={(e) =>
                                 setCouponForm({
                                   ...couponForm,
-                                  code: couponModel.formatCouponCode(
-                                    e.target.value
-                                  ),
+                                  code: formatCouponCode(e.target.value),
                                 })
                               }
                               className="text-sm font-mono"
@@ -1047,8 +1003,8 @@ const App = () => {
                             const coupon = coupons.find(
                               (c) => c.code === e.target.value
                             );
-                            if (coupon) applyCoupon(coupon);
-                            else updateSelectedCoupon(null);
+                            if (coupon) handleApplyCoupon(coupon);
+                            else clearSelectedCoupon();
                           }}
                         >
                           <option value="">쿠폰 선택</option>
