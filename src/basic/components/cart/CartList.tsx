@@ -2,8 +2,8 @@ import { ShoppingBagIcon } from "../icons";
 import { CartItem } from "../../../types";
 import Button from "../ui/Button";
 import { XIcon } from "../icons";
-import cartModel from "../../models/cart";
 import { formatters } from "../../utils/formatters";
+import cartService from "../../services/cart";
 
 export default function CartList({
   cart,
@@ -34,7 +34,7 @@ export default function CartList({
           item={item}
           removeFromCart={removeFromCart}
           updateQuantity={updateQuantity}
-          calculatedItemTotal={cartModel.calculateItemTotal({ item, cart })}
+          calculatedItemTotal={cartService.calculateItemTotal({ item, cart })}
         />
       ))}
     </div>

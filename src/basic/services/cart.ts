@@ -2,13 +2,16 @@ import { CartItem, Coupon, Product } from "../../types";
 import cartModel from "../models/cart";
 import discountModel from "../models/discount";
 import productModel from "../models/product";
-import { VALIDATION_LIMITS } from "../utils/constants";
 
-export interface CartOperationResult {
-  success: boolean;
-  cart?: CartItem[];
-  error?: string;
-}
+export type CartOperationResult =
+  | {
+      success: true;
+      value: CartItem[];
+    }
+  | {
+      success: false;
+      error: string;
+    };
 
 export interface CartTotalResult {
   totalBeforeDiscount: number;
@@ -93,7 +96,7 @@ const cartService = {
         })
       : cartModel.addNewItem({ cart, product });
 
-    return { success: true, cart: newCart };
+    return { success: true, value: newCart };
   },
 
   updateItemQuantity: ({
@@ -106,26 +109,36 @@ const cartService = {
     newQuantity: number;
   }): CartOperationResult => {
     if (newQuantity <= 0) {
-      return { success: true, cart: cartModel.removeItem({ cart, productId }) };
-    }
-
-    const item = cartModel.findItem({ cart, productId });
-    if (!item) return { success: false, error: "상품을 찾을 수 없습니다" };
-
-    if (
-      newQuantity >
-      productModel.getRemainingStock({ product: item.product, cart })
-    ) {
       return {
-        success: false,
-        error: `재고는 ${item.product.stock}개까지 구매 가능합니다`,
+        success: true,
+        value: cartModel.removeItem({ cart, productId }),
       };
     }
 
-    return {
-      success: true,
-      cart: cartModel.updateItemQuantity({ cart, productId, newQuantity }),
-    };
+    const item = cartModel.findItem({ cart, productId });
+    if (!item) {
+      return { success: false, error: "상품을 찾을 수 없습니다" };
+    }
+
+    if (newQuantity <= 0) {
+      return {
+        success: true,
+        value: cartModel.removeItem({ cart, productId }),
+      };
+    }
+
+    const maxStock = item.product.stock;
+
+    if (newQuantity > maxStock) {
+      return { success: false, error: `재고는 ${maxStock}개까지만 있습니다.` };
+    }
+
+    const updatedCart = cartModel.updateItemQuantity({
+      cart,
+      productId,
+      newQuantity,
+    });
+    return { success: true, value: updatedCart };
   },
 };
 

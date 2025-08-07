@@ -161,57 +161,16 @@ const App = () => {
   // [cart] 장바구니 담기 로직
   const addToCart = useCallback(
     (product: ProductWithUI) => {
-      // 남은 재고가 존재하는지
-      const remainingStock = productModel.getRemainingStock({
-        product,
+      const result = cartService.addItemToCart({
         cart,
+        product,
       });
-      // 재고가 없다면 에러 알람
-      if (remainingStock <= 0) {
-        notification.add("재고가 부족합니다!", "error");
+      if (!result.success) {
+        notification.add(result.error, "error");
         return;
       }
 
-      // 재고가 있으면 장바구니에 담는다.
-      setCart((prevCart) => {
-        // 카트에 상품이 있는지 확인
-        const existingItem = cartModel.findItem({
-          cart: prevCart,
-          productId: product.id,
-        });
-
-        // 1. 카트에 상품이 존재하면
-        if (existingItem) {
-          const newQuantity =
-            cartModel.getItemQuantity({
-              cart: prevCart,
-              productId: product.id,
-            }) + 1;
-
-          // 카운트 업할 갯수와 재고를 비교
-          if (newQuantity > product.stock) {
-            notification.add(
-              `재고는 ${product.stock}개까지만 있습니다.`,
-              "error"
-            );
-            return prevCart;
-          }
-
-          // 재고가 있다면 카트에 갯수를 추가
-          return cartModel.updateItemQuantity({
-            cart: prevCart,
-            productId: product.id,
-            newQuantity: newQuantity,
-          });
-        }
-
-        // 2. 장바구니에 새로운 상품을 담기
-        return cartModel.addNewItem({
-          cart: prevCart,
-          product,
-        });
-      });
-
+      setCart(result.value);
       notification.add("장바구니에 담았습니다", "success");
     },
     [cart, notification.add]
@@ -230,33 +189,19 @@ const App = () => {
   // [cart] 장바구니 수량 업데이트
   const updateQuantity = useCallback(
     (productId: string, newQuantity: number) => {
-      // 업데이트 할 수량이 0이하면 카트에서 제거
-      if (newQuantity <= 0) {
-        removeFromCart(productId);
+      const result = cartService.updateItemQuantity({
+        cart,
+        productId,
+        newQuantity,
+      });
+      if (!result.success) {
+        notification.add(result.error, "error");
         return;
       }
 
-      // 상품목록에서 상품찾기
-      const product = products.find((p) => p.id === productId);
-      if (!product) return;
-
-      // 상품 재고 수량 체크해서 장바구니에 담을 갯수와 비교
-      const maxStock = product.stock;
-      if (newQuantity > maxStock) {
-        notification.add(`재고는 ${maxStock}개까지만 있습니다.`, "error");
-        return;
-      }
-
-      // 상품 재고가 충분하다면 카트에 담기
-      setCart((prevCart) =>
-        cartModel.updateItemQuantity({
-          cart: prevCart,
-          newQuantity,
-          productId,
-        })
-      );
+      setCart(result.value);
     },
-    [products, removeFromCart, notification.add]
+    [cart, notification.add]
   );
 
   // [coupon] 쿠폰 적용하기
