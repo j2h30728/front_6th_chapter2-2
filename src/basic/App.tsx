@@ -1,11 +1,15 @@
-import { useState, useCallback } from "react";
 import { Coupon, Product } from "../types";
 import useNotification from "./utils/hooks/useNotification";
 import NotificationToast from "./components/ui/NotificationToast";
-import cartService from "./services/cart";
 import { useCart } from "./hooks/useCart";
 import { useCoupon } from "./hooks/useCoupon";
 import { useProduct } from "./hooks/useProduct";
+import { useAdminMode } from "./hooks/useAdminMode";
+import { useSearch } from "./hooks/useSearch";
+import { useCartActions } from "./hooks/useCartActions";
+import { useProductActions } from "./hooks/useProductActions";
+import { useCouponActions } from "./hooks/useCouponActions";
+import { useOrderActions } from "./hooks/useOrderActions";
 import AdminPage from "./pages/AdminPage";
 import CartPage from "./pages/CartPage";
 import Header from "./layout/Header";
@@ -48,128 +52,36 @@ const App = () => {
     clearSelectedCoupon,
   } = useCoupon();
 
-  // 어드민
-  const [isAdmin, setIsAdmin] = useState(false);
+  // 어드민 모드 관리
+  const { isAdmin, toggleAdmin } = useAdminMode();
 
   // 알람 기능
   const notification = useNotification();
 
-  // 검색어
-  const [searchTerm, setSearchTerm] = useState("");
+  // 검색어 관리
+  const { searchTerm, setSearchTerm, debouncedSearchTerm } = useSearch();
 
-  // [cart] 장바구니 담기 로직
-  const handleAddToCart = useCallback(
-    (product: ProductWithUI) => {
-      const result = addToCart(product);
-      if (result.status === "error") {
-        notification.add(result.message, result.status);
-        return;
-      }
-      notification.add("장바구니에 담았습니다", "success");
-    },
-    [addToCart, notification.add]
-  );
-
-  // [cart] 카트에서 상품을 제거
-  const handleRemoveFromCart = useCallback(
-    (productId: string) => {
-      const result = removeFromCart(productId);
-      if (result.status === "error") {
-        notification.add(result.message, result.status);
-        return;
-      }
-    },
-    [removeFromCart, notification.add]
-  );
-
-  // [cart] 장바구니 수량 업데이트
-  const handleUpdateQuantity = useCallback(
-    (productId: string, newQuantity: number) => {
-      const result = updateQuantity(productId, newQuantity);
-      if (result.status === "error") {
-        notification.add(result.message, result.status);
-        return;
-      }
-    },
-    [updateQuantity, notification.add]
-  );
-
-  // [coupon] 쿠폰 적용하기
-  const handleApplyCoupon = useCallback(
-    (coupon: Coupon) => {
-      // 현재 장바구니에 존재하는 할인후 전체 가격
-      const currentTotal = cartService.calculateCartTotal({
-        cart,
-        selectedCoupon,
-      }).totalAfterDiscount;
-
-      // 쿠폰 적용
-      const validation = applyCoupon(coupon, currentTotal);
-      if (!validation.isValid) {
-        notification.add(validation.message, "error");
-        return;
-      }
-
-      notification.add("쿠폰이 적용되었습니다.", "success");
-    },
-    [cart, selectedCoupon, applyCoupon, notification.add]
-  );
-
-  // [order] 주문 완료 처리
-  const handleCompleteOrder = useCallback(() => {
-    const result = completeOrder();
-
-    if (result.status === "success") {
-      notification.add(result.message, result.status);
-    } else {
-      notification.add(result.message, result.status);
-    }
-  }, [completeOrder, notification.add]);
-
-  // [product] 상품목록에 상품 추가하기
-  const handleAddProduct = useCallback(
-    (newProduct: Omit<ProductWithUI, "id">) => {
-      const result = addProduct(newProduct);
-      notification.add(result.message, result.status);
-    },
-    [addProduct, notification.add]
-  );
-
-  // [product] 특정 상품 업데이트하기(수정)
-  const handleUpdateProduct = useCallback(
-    (productId: string, updates: Partial<ProductWithUI>) => {
-      const result = updateProduct(productId, updates);
-      notification.add(result.message, result.status);
-    },
-    [updateProduct, notification.add]
-  );
-
-  // [product] 특정 상품 제거하기
-  const handleDeleteProduct = useCallback(
-    (productId: string) => {
-      const result = deleteProduct(productId);
-      notification.add(result.message, result.status);
-    },
-    [deleteProduct, notification.add]
-  );
-
-  // [coupon] 쿠폰 추가하기
-  const handleAddCoupon = useCallback(
-    (newCoupon: Coupon) => {
-      const result = addCoupon(newCoupon);
-      notification.add(result.message, result.status);
-    },
-    [addCoupon, notification.add]
-  );
-
-  // [coupon] 쿠폰 제거하기
-  const handleDeleteCoupon = useCallback(
-    (couponCode: string) => {
-      const result = deleteCoupon(couponCode);
-      notification.add(result.message, result.status);
-    },
-    [deleteCoupon, notification.add]
-  );
+  // 액션 훅들
+  const { handleAddToCart, handleRemoveFromCart, handleUpdateQuantity } =
+    useCartActions(
+      cart,
+      addToCart,
+      removeFromCart,
+      updateQuantity,
+      notification
+    );
+  const { handleAddProduct, handleUpdateProduct, handleDeleteProduct } =
+    useProductActions(addProduct, updateProduct, deleteProduct, notification);
+  const { handleApplyCoupon, handleAddCoupon, handleDeleteCoupon } =
+    useCouponActions(
+      cart,
+      selectedCoupon,
+      applyCoupon,
+      addCoupon,
+      deleteCoupon,
+      notification
+    );
+  const { handleCompleteOrder } = useOrderActions(completeOrder, notification);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -182,7 +94,7 @@ const App = () => {
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
         cart={cart}
-        onToggleAdmin={() => setIsAdmin(!isAdmin)}
+        onToggleAdmin={toggleAdmin}
       />
 
       <main className="max-w-7xl mx-auto px-4 py-8">
@@ -196,6 +108,7 @@ const App = () => {
             deleteProduct={handleDeleteProduct}
             addCoupon={handleAddCoupon}
             deleteCoupon={handleDeleteCoupon}
+            notification={notification}
           />
         ) : (
           <CartPage
@@ -204,6 +117,7 @@ const App = () => {
             coupons={coupons}
             selectedCoupon={selectedCoupon}
             searchTerm={searchTerm}
+            debouncedSearchTerm={debouncedSearchTerm}
             addToCart={handleAddToCart}
             removeFromCart={handleRemoveFromCart}
             updateQuantity={handleUpdateQuantity}

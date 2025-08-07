@@ -4,14 +4,13 @@ import { Coupon } from "../../types";
 import ProductList from "../components/product/ProductList";
 import Cart from "../components/cart/Cart";
 
-import { useDebounce } from "../utils/hooks/useDebounce";
-
 interface CartPageProps {
   products: ProductWithUI[];
   cart: CartItem[];
   coupons: Coupon[];
   selectedCoupon: Coupon | null;
   searchTerm: string;
+  debouncedSearchTerm: string;
   addToCart: (product: ProductWithUI) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, newQuantity: number) => void;
@@ -32,6 +31,7 @@ export default function CartPage({
   coupons,
   selectedCoupon,
   searchTerm,
+  debouncedSearchTerm,
   addToCart,
   removeFromCart,
   updateQuantity,
@@ -42,8 +42,6 @@ export default function CartPage({
   searchProduct,
   getStockStatus,
 }: CartPageProps) {
-  // 디바운스된 검색어 계산
-  const debouncedSearchTerm = useDebounce(searchTerm);
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
       <div className="lg:col-span-3">
