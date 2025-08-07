@@ -3,24 +3,31 @@ import { ProductWithUI } from "../../App";
 import { formatters } from "../../utils/formatters";
 import { DefaultImageIcon } from "../icons";
 import Button from "../ui/Button";
-import productService from "../../services/product";
 
 export default function ProductList({
   cart,
   products,
   debouncedSearchTerm,
   addToCart,
+  searchProduct,
+  getStockStatus,
 }: {
   cart: CartItem[];
   products: ProductWithUI[];
   debouncedSearchTerm: string;
   addToCart: (product: ProductWithUI) => void;
+  searchProduct: (searchTerm: string) => ProductWithUI[];
+  getStockStatus: (
+    product: ProductWithUI,
+    cart: CartItem[]
+  ) => {
+    remainingStock: number;
+    isLowStock: boolean;
+    isOutOfStock: boolean;
+  };
 }) {
   const filteredProducts = debouncedSearchTerm
-    ? productService.searchProduct({
-        products,
-        searchTerm: debouncedSearchTerm,
-      })
+    ? searchProduct(debouncedSearchTerm)
     : products;
 
   if (filteredProducts.length === 0) {
@@ -36,8 +43,10 @@ export default function ProductList({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {filteredProducts.map((product) => {
-        const { remainingStock, isLowStock, isOutOfStock } =
-          productService.getStockStatus({ product, cart });
+        const { remainingStock, isLowStock, isOutOfStock } = getStockStatus(
+          product,
+          cart
+        );
         return (
           <ProductItem
             key={product.id}

@@ -162,11 +162,16 @@ export function useCart() {
     return result;
   }, [state.cart, syncWithLocalStorage]);
 
+  const calculateItemTotal = useCallback((item: CartItem, cart: CartItem[]) => {
+    return cartService.calculateItemTotal({ item, cart });
+  }, []);
+
   return {
     cart: state.cart,
     addToCart,
     removeFromCart,
     updateQuantity,
     completeOrder,
+    calculateItemTotal,
   };
 }

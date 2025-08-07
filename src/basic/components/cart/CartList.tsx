@@ -3,16 +3,17 @@ import { CartItem } from "../../../types";
 import Button from "../ui/Button";
 import { XIcon } from "../icons";
 import { formatters } from "../../utils/formatters";
-import cartService from "../../services/cart";
 
 export default function CartList({
   cart,
   removeFromCart,
   updateQuantity,
+  calculateItemTotal,
 }: {
   cart: CartItem[];
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
+  calculateItemTotal: (item: CartItem, cart: CartItem[]) => number;
 }) {
   if (cart.length === 0) {
     return (
@@ -34,7 +35,7 @@ export default function CartList({
           item={item}
           removeFromCart={removeFromCart}
           updateQuantity={updateQuantity}
-          calculatedItemTotal={cartService.calculateItemTotal({ item, cart })}
+          calculatedItemTotal={calculateItemTotal(item, cart)}
         />
       ))}
     </div>

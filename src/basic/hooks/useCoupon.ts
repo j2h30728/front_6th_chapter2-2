@@ -10,17 +10,13 @@ type CouponState = {
 };
 
 type CouponAction =
-  | { type: "SET_SELECTED_COUPON"; payload: Coupon | null }
   | { type: "APPLY_COUPON"; payload: { coupon: Coupon; cartTotal: number } }
   | { type: "ADD_COUPON"; payload: Coupon }
-  | { type: "DELETE_COUPON"; payload: string };
+  | { type: "DELETE_COUPON"; payload: string }
+  | { type: "CLEAR_SELECTED_COUPON" };
 
 function couponReducer(state: CouponState, action: CouponAction): CouponState {
   switch (action.type) {
-    case "SET_SELECTED_COUPON": {
-      return { ...state, selectedCoupon: action.payload };
-    }
-
     case "APPLY_COUPON": {
       const validation = couponService.apply({
         coupon: action.payload.coupon,
@@ -66,6 +62,10 @@ function couponReducer(state: CouponState, action: CouponAction): CouponState {
       return state;
     }
 
+    case "CLEAR_SELECTED_COUPON": {
+      return { ...state, selectedCoupon: null };
+    }
+
     default:
       return state;
   }
@@ -105,14 +105,6 @@ export function useCoupon() {
       setStoredCoupons(newCoupons);
     },
     [setStoredSelectedCoupon, setStoredCoupons]
-  );
-
-  const updateSelectedCoupon = useCallback(
-    (coupon: Coupon | null) => {
-      dispatch({ type: "SET_SELECTED_COUPON", payload: coupon });
-      syncWithLocalStorage(coupon, state.coupons);
-    },
-    [state.coupons, syncWithLocalStorage]
   );
 
   const applyCoupon = useCallback(
@@ -185,14 +177,13 @@ export function useCoupon() {
   }, []);
 
   const clearSelectedCoupon = useCallback(() => {
-    dispatch({ type: "SET_SELECTED_COUPON", payload: null });
+    dispatch({ type: "CLEAR_SELECTED_COUPON" });
     syncWithLocalStorage(null, state.coupons);
   }, [state.coupons, syncWithLocalStorage]);
 
   return {
     selectedCoupon: state.selectedCoupon,
     coupons: state.coupons,
-    setSelectedCoupon: updateSelectedCoupon,
     applyCoupon,
     addCoupon,
     deleteCoupon,

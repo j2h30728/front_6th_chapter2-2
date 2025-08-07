@@ -15,68 +15,42 @@ import useNotification from "./utils/hooks/useNotification";
 import NotificationToast from "./components/ui/NotificationToast";
 import { isValidNumericInput } from "./utils/validators";
 import { useDebounce } from "./utils/hooks/useDebounce";
-import useLocalStorage from "./utils/hooks/useLocalStorage";
 import { formatters } from "./utils/formatters";
 import { parsers } from "./utils/parsers";
 import cartService from "./services/cart";
-import productService from "./services/product";
 import { useCart } from "./hooks/useCart";
 import { useCoupon } from "./hooks/useCoupon";
+import { useProduct } from "./hooks/useProduct";
 
 export interface ProductWithUI extends Product {
   description?: string;
   isRecommended?: boolean;
 }
 
-// 초기 데이터
-const initialProducts: ProductWithUI[] = [
-  {
-    id: "p1",
-    name: "상품1",
-    price: 10000,
-    stock: 20,
-    discounts: [
-      { quantity: 10, rate: 0.1 },
-      { quantity: 20, rate: 0.2 },
-    ],
-    description: "최고급 품질의 프리미엄 상품입니다.",
-  },
-  {
-    id: "p2",
-    name: "상품2",
-    price: 20000,
-    stock: 20,
-    discounts: [{ quantity: 10, rate: 0.15 }],
-    description: "다양한 기능을 갖춘 실용적인 상품입니다.",
-    isRecommended: true,
-  },
-  {
-    id: "p3",
-    name: "상품3",
-    price: 30000,
-    stock: 20,
-    discounts: [
-      { quantity: 10, rate: 0.2 },
-      { quantity: 30, rate: 0.25 },
-    ],
-    description: "대용량과 고성능을 자랑하는 상품입니다.",
-  },
-];
-
 const App = () => {
-  const [products, setProducts] = useLocalStorage<ProductWithUI[]>(
-    "products",
-    initialProducts
-  );
-  // useCart 훅 사용
-  const { cart, addToCart, removeFromCart, updateQuantity, completeOrder } =
-    useCart();
+  const {
+    products,
+    addProduct,
+    updateProduct,
+    deleteProduct,
+    searchProduct,
+    getStockStatus,
+    validateProductPrice,
+    validateProductStock,
+  } = useProduct();
 
-  // useCoupon 훅 사용
+  const {
+    cart,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    completeOrder,
+    calculateItemTotal,
+  } = useCart();
+
   const {
     selectedCoupon,
     coupons,
-    setSelectedCoupon: updateSelectedCoupon,
     applyCoupon,
     addCoupon,
     deleteCoupon,
@@ -135,10 +109,7 @@ const App = () => {
       if (productId) {
         const product = products.find((p) => p.id === productId);
         if (product) {
-          const { isOutOfStock } = productService.getStockStatus({
-            product,
-            cart,
-          });
+          const { isOutOfStock } = getStockStatus(product, cart);
           if (isOutOfStock) {
             return "SOLD OUT";
           }
@@ -146,7 +117,7 @@ const App = () => {
       }
       return formatters.price(price, !isAdmin);
     },
-    [products, cart, isAdmin]
+    [products, cart, getStockStatus, isAdmin]
   );
 
   // [ui] 장바구니 총 상품 수 계산
@@ -230,49 +201,30 @@ const App = () => {
   }, [completeOrder, notification.add]);
 
   // [product] 상품목록에 상품 추가하기
-  const addProduct = useCallback(
+  const handleAddProduct = useCallback(
     (newProduct: Omit<ProductWithUI, "id">) => {
-      const result = productService.addNewItem({
-        products,
-        product: newProduct,
-      });
-      if (result.status === "success") {
-        setProducts(result.value);
-      }
+      const result = addProduct(newProduct);
       notification.add(result.message, result.status);
     },
-    [notification.add, products]
+    [addProduct, notification.add]
   );
 
   // [product] 특정 상품 업데이트하기(수정)
-  const updateProduct = useCallback(
+  const handleUpdateProduct = useCallback(
     (productId: string, updates: Partial<ProductWithUI>) => {
-      const result = productService.updateProduct({
-        products,
-        productId,
-        updates,
-      });
-      if (result.status === "success") {
-        setProducts(result.value);
-      }
+      const result = updateProduct(productId, updates);
       notification.add(result.message, result.status);
     },
-    [notification.add, products]
+    [updateProduct, notification.add]
   );
 
   // [product] 특정 상품 제거하기
-  const deleteProduct = useCallback(
+  const handleDeleteProduct = useCallback(
     (productId: string) => {
-      const result = productService.deleteProduct({
-        products,
-        productId,
-      });
-      if (result.status === "success") {
-        setProducts(result.value);
-      }
+      const result = deleteProduct(productId);
       notification.add(result.message, result.status);
     },
-    [notification.add]
+    [deleteProduct, notification.add]
   );
 
   // [coupon] 쿠폰 추가하기
@@ -301,13 +253,13 @@ const App = () => {
     // 상품 수정 상태
     if (editingProduct && editingProduct !== "new") {
       // [product] 상품 정보 수정 처리
-      updateProduct(editingProduct, productForm);
+      handleUpdateProduct(editingProduct, productForm);
 
       // 수정모드 취소
       setEditingProduct(null);
     } else {
       // 상품 추가 상태
-      addProduct({
+      handleAddProduct({
         ...productForm,
         discounts: productForm.discounts,
       });
@@ -362,7 +314,7 @@ const App = () => {
 
   const handleStockChange = useCallback(
     (value: string) => {
-      const validation = productService.validateProductStock(value);
+      const validation = validateProductStock(value);
 
       if (validation.isValid) {
         setProductForm({
@@ -377,7 +329,7 @@ const App = () => {
         });
       }
     },
-    [productForm, notification.add]
+    [productForm, validateProductStock, notification.add]
   );
 
   const handleCouponChange = useCallback(
@@ -399,7 +351,7 @@ const App = () => {
 
   const handleProductPriceChange = useCallback(
     (value: string) => {
-      const validation = productService.validateProductPrice(value);
+      const validation = validateProductPrice(value);
 
       if (!validation.isValid) {
         notification.add(validation.message, "error");
@@ -409,7 +361,7 @@ const App = () => {
         price: validation.value,
       });
     },
-    [productForm, notification.add]
+    [productForm, validateProductPrice, notification.add]
   );
 
   return (
@@ -574,7 +526,7 @@ const App = () => {
                                 수정
                               </Button>
                               <Button
-                                onClick={() => deleteProduct(product.id)}
+                                onClick={() => handleDeleteProduct(product.id)}
                                 variant="ghost"
                                 size="small"
                                 className="text-red-600 hover:text-red-900"
@@ -966,6 +918,8 @@ const App = () => {
                   products={products}
                   debouncedSearchTerm={debouncedSearchTerm}
                   addToCart={handleAddToCart}
+                  searchProduct={searchProduct}
+                  getStockStatus={getStockStatus}
                 />
               </section>
             </div>
@@ -981,6 +935,7 @@ const App = () => {
                     cart={cart}
                     removeFromCart={handleRemoveFromCart}
                     updateQuantity={handleUpdateQuantity}
+                    calculateItemTotal={calculateItemTotal}
                   />
                 </section>
 
