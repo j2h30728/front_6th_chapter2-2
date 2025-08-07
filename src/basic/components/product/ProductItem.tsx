@@ -1,7 +1,6 @@
 import { ProductWithUI } from "../../App";
-import { formatters } from "../../utils/formatters";
 import { DefaultImageIcon } from "../icons";
-import Button from "../ui/Button";
+import { Button, PriceDisplay } from "../ui";
 import {
   getMaxDiscountPercentage,
   getStockStatusText,
@@ -57,9 +56,15 @@ export default function ProductItem({
 
         {/* 가격 정보 */}
         <div className="mb-3">
-          <p className="text-lg font-bold text-gray-900">
-            {isOutOfStock ? "SOLD OUT" : formatters.price(product.price, false)}
-          </p>
+          {isOutOfStock ? (
+            <p className="text-lg font-bold text-gray-400">SOLD OUT</p>
+          ) : (
+            <PriceDisplay
+              price={product.price}
+              size="large"
+              className="text-left"
+            />
+          )}
           {product.discounts.length > 0 && (
             <p className="text-xs text-gray-500">
               {product.discounts[0].quantity}개 이상 구매시 할인{" "}

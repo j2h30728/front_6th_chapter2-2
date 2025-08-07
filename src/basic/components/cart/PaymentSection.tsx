@@ -1,5 +1,4 @@
-import Button from "../ui/Button";
-import { formatters } from "../../utils/formatters";
+import { Button, PriceDisplay } from "../ui";
 import { couponUtils } from "../../utils/couponUtils";
 
 interface PaymentSectionProps {
@@ -30,28 +29,24 @@ export default function PaymentSection({
     >
       <h3 className="text-lg font-semibold mb-4">결제 정보</h3>
       <div className="space-y-2 text-sm">
-        <div className="flex justify-between">
+        <div className="flex justify-between items-center">
           <span className="text-gray-600">상품 금액</span>
-          <span className="font-medium">
-            {formatters.price(totalBeforeDiscount, false)}
-          </span>
+          <PriceDisplay price={totalBeforeDiscount} size="small" />
         </div>
         {hasDiscountApplied && (
-          <div className="flex justify-between text-red-500">
+          <div className="flex justify-between items-center text-red-500">
             <span>할인 금액</span>
-            <span>-{formatters.price(discountAmount, false)}</span>
+            <span>-{discountAmount.toLocaleString()}원</span>
           </div>
         )}
-        <div className="flex justify-between py-2 border-t border-gray-200">
+        <div className="flex justify-between items-center py-2 border-t border-gray-200">
           <span className="font-semibold">결제 예정 금액</span>
-          <span className="font-bold text-lg text-gray-900">
-            {formatters.price(totalAfterDiscount, false)}
-          </span>
+          <PriceDisplay price={totalAfterDiscount} size="large" />
         </div>
       </div>
 
       <Button onClick={completeOrder} variant="yellow" className="w-full mt-4">
-        {formatters.price(totalAfterDiscount, false)} 결제하기
+        {totalAfterDiscount.toLocaleString()}원 결제하기
       </Button>
 
       <div className="mt-3 text-xs text-gray-500 text-center">

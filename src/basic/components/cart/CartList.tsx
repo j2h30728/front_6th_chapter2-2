@@ -1,8 +1,7 @@
 import { ShoppingBagIcon } from "../icons";
 import { CartItem } from "../../../types";
-import Button from "../ui/Button";
+import { Button, QuantityControls, PriceDisplay } from "../ui";
 import { XIcon } from "../icons";
-import { formatters } from "../../utils/formatters";
 import { cartItemUtils } from "../../utils/cartItemUtils";
 
 export default function CartList({
@@ -17,15 +16,7 @@ export default function CartList({
   calculateItemTotal: (item: CartItem, cart: CartItem[]) => number;
 }) {
   if (cart.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <ShoppingBagIcon
-          className="w-16 h-16 text-gray-300 mx-auto mb-4"
-          size="large"
-        />
-        <p className="text-gray-500 text-sm">장바구니가 비어있습니다</p>
-      </div>
-    );
+    return <EmptyCart />;
   }
 
   return (
@@ -43,6 +34,16 @@ export default function CartList({
   );
 }
 
+const EmptyCart = () => (
+  <div className="text-center py-8">
+    <ShoppingBagIcon
+      className="w-16 h-16 text-gray-300 mx-auto mb-4"
+      size="large"
+    />
+    <p className="text-gray-500 text-sm">장바구니가 비어있습니다</p>
+  </div>
+);
+
 const CartItemCard = ({
   item,
   removeFromCart,
@@ -54,17 +55,6 @@ const CartItemCard = ({
   updateQuantity: (productId: string, quantity: number) => void;
   calculatedItemTotal: number;
 }) => {
-  // 할인률 계산
-  const originalPrice = cartItemUtils.calculateOriginalPrice(item);
-  const hasDiscount = cartItemUtils.hasDiscount(
-    originalPrice,
-    calculatedItemTotal
-  );
-  const discountRate = cartItemUtils.calculateDiscountRate(
-    originalPrice,
-    calculatedItemTotal
-  );
-
   return (
     <div key={item.product.id} className="border-b pb-3 last:border-b-0">
       <div className="flex justify-between items-start mb-2">
@@ -81,33 +71,15 @@ const CartItemCard = ({
         </Button>
       </div>
       <div className="flex items-center justify-between">
-        <div className="flex items-center">
-          <button
-            onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-            className="w-6 h-6 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-100"
-          >
-            <span className="text-xs">−</span>
-          </button>
-          <span className="mx-3 text-sm font-medium w-8 text-center">
-            {item.quantity}
-          </span>
-          <button
-            onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-            className="w-6 h-6 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-100"
-          >
-            <span className="text-xs">+</span>
-          </button>
-        </div>
-        <div className="text-right">
-          {hasDiscount && (
-            <span className="text-xs text-red-500 font-medium block">
-              -{discountRate}%
-            </span>
-          )}
-          <p className="text-sm font-medium text-gray-900">
-            {formatters.price(Math.round(calculatedItemTotal), false)}
-          </p>
-        </div>
+        <QuantityControls
+          quantity={item.quantity}
+          productId={item.product.id}
+          onQuantityChange={updateQuantity}
+        />
+        <PriceDisplay
+          price={calculatedItemTotal}
+          originalPrice={cartItemUtils.calculateOriginalPrice(item)}
+        />
       </div>
     </div>
   );
