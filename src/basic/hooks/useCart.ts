@@ -1,5 +1,5 @@
 import { useReducer, useCallback } from "react";
-import { CartItem, Product } from "../../types";
+import { CartItem } from "../../types";
 import { ProductWithUI } from "../App";
 import cartService from "../services/cart";
 import orderService from "../services/order";

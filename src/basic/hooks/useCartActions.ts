@@ -1,9 +1,7 @@
 import { useCallback } from "react";
 import { ProductWithUI } from "../App";
-import { CartItem } from "../../types";
 
 export const useCartActions = (
-  currentCart: CartItem[],
   addToCartFn: (product: ProductWithUI) => {
     status: "error" | "success";
     message: string;

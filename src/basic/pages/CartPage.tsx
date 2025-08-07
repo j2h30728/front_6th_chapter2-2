@@ -30,7 +30,6 @@ export default function CartPage({
   cart,
   coupons,
   selectedCoupon,
-  searchTerm,
   debouncedSearchTerm,
   addToCart,
   removeFromCart,

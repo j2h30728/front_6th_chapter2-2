@@ -1,4 +1,4 @@
-import { Coupon, Product } from "../types";
+import { Product } from "../types";
 import useNotification from "./utils/hooks/useNotification";
 import NotificationToast from "./components/ui/NotificationToast";
 import { useCart } from "./hooks/useCart";
@@ -27,8 +27,6 @@ const App = () => {
     deleteProduct,
     searchProduct,
     getStockStatus,
-    validateProductPrice,
-    validateProductStock,
   } = useProduct();
 
   const {
@@ -46,9 +44,7 @@ const App = () => {
     applyCoupon,
     addCoupon,
     deleteCoupon,
-    validateCoupon,
-    formatCouponCode,
-    initializeCoupon,
+
     clearSelectedCoupon,
   } = useCoupon();
 
@@ -63,13 +59,7 @@ const App = () => {
 
   // 액션 훅들
   const { handleAddToCart, handleRemoveFromCart, handleUpdateQuantity } =
-    useCartActions(
-      cart,
-      addToCart,
-      removeFromCart,
-      updateQuantity,
-      notification
-    );
+    useCartActions(addToCart, removeFromCart, updateQuantity, notification);
   const { handleAddProduct, handleUpdateProduct, handleDeleteProduct } =
     useProductActions(addProduct, updateProduct, deleteProduct, notification);
   const { handleApplyCoupon, handleAddCoupon, handleDeleteCoupon } =
