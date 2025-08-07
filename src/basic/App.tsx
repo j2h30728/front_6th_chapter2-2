@@ -21,6 +21,7 @@ import { formatters } from "./utils/formatters";
 import { parsers } from "./utils/parsers";
 import cartService from "./services/cart";
 import productService from "./services/product";
+import couponService from "./services/coupon";
 
 export interface ProductWithUI extends Product {
   description?: string;
@@ -227,7 +228,7 @@ const App = () => {
       }).totalAfterDiscount;
 
       // 할인후 전체 가격이 만원 미만이고, 퍼센트 할인 쿠폰일 경우
-      const validation = couponModel.apply({
+      const validation = couponService.apply({
         coupon,
         cartTotal: currentTotal,
       });
@@ -306,19 +307,14 @@ const App = () => {
   // [coupon] 쿠폰 추가하기
   const addCoupon = useCallback(
     (newCoupon: Coupon) => {
-      // 이미 쿠폰이 존재하는 지 확인
-      const isDuplicate = couponModel.isDuplicateCode({
-        code: newCoupon.code,
+      const result = couponService.addCoupon({
         coupons,
+        newCoupon,
       });
-      if (isDuplicate) {
-        notification.add("이미 존재하는 쿠폰 코드입니다.", "error");
-        return;
+      if (result.status === "success") {
+        setCoupons(result.value);
       }
-
-      // 쿠폰 추가
-      setCoupons((prev) => [...prev, newCoupon]);
-      notification.add("쿠폰이 추가되었습니다.", "success");
+      notification.add(result.message, result.status);
     },
     [coupons, notification.add]
   );
@@ -326,16 +322,21 @@ const App = () => {
   // [coupon] 쿠폰 제거하기
   const deleteCoupon = useCallback(
     (couponCode: string) => {
-      // 쿠폰 제거
-      setCoupons((prev) => prev.filter((c) => c.code !== couponCode));
+      const result = couponService.deleteCoupon({
+        coupons,
+        couponCode,
+      });
+      if (result.status === "success") {
+        setCoupons(result.value);
 
-      // 선택한 쿠폰과 인자로 넘겨주는 쿠폰이 같을경우에는 선택 쿠폰 헤제
-      if (selectedCoupon?.code === couponCode) {
-        setSelectedCoupon(null);
+        // 선택한 쿠폰과 인자로 넘겨주는 쿠폰이 같을경우에는 선택 쿠폰 헤제
+        if (selectedCoupon?.code === couponCode) {
+          setSelectedCoupon(null);
+        }
       }
-      notification.add("쿠폰이 삭제되었습니다.", "success");
+      notification.add(result.message, result.status);
     },
-    [selectedCoupon, notification.add]
+    [coupons, selectedCoupon, notification.add]
   );
 
   // [product] 상품 추가/수정 폼 제출 처리
@@ -434,7 +435,7 @@ const App = () => {
     (value: string) => {
       const discountValue = parsers.safeParseInt(value);
 
-      const validation = couponModel.validateDiscountRange({
+      const validation = couponService.validateDiscountRange({
         discountType: couponForm.discountType,
         discountValue,
       });
