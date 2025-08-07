@@ -13,8 +13,6 @@ import ProductList from "./components/product/ProductList";
 import CartList from "./components/cart/CartList";
 import useNotification from "./utils/hooks/useNotification";
 import NotificationToast from "./components/ui/NotificationToast";
-import cartModel from "./models/cart";
-import productModel from "./models/product";
 import couponModel from "./models/coupon";
 import { isValidNumericInput } from "./utils/validators";
 import { useDebounce } from "./utils/hooks/useDebounce";
@@ -22,6 +20,7 @@ import useLocalStorage from "./utils/hooks/useLocalStorage";
 import { formatters } from "./utils/formatters";
 import { parsers } from "./utils/parsers";
 import cartService from "./services/cart";
+import productService from "./services/product";
 
 export interface ProductWithUI extends Product {
   description?: string;
@@ -136,16 +135,24 @@ const App = () => {
   });
 
   // [ui] 상품 가격 포맷팅
-  const formatPrice = (price: number, productId?: string): string => {
-    if (productId) {
-      const product = products.find((p) => p.id === productId);
-      if (product && productModel.getRemainingStock({ product, cart }) <= 0) {
-        return "SOLD OUT";
+  const formatPrice = useCallback(
+    (price: number, productId?: string) => {
+      if (productId) {
+        const product = products.find((p) => p.id === productId);
+        if (product) {
+          const { isOutOfStock } = productService.getStockStatus({
+            product,
+            cart,
+          });
+          if (isOutOfStock) {
+            return "SOLD OUT";
+          }
+        }
       }
-    }
-
-    return formatters.price(price, !isAdmin);
-  };
+      return formatters.price(price, !isAdmin);
+    },
+    [products, cart, isAdmin]
+  );
 
   // [ui] 장바구니 총 상품 수 계산
   const [totalItemCount, setTotalItemCount] = useState(0);
@@ -165,8 +172,8 @@ const App = () => {
         cart,
         product,
       });
-      if (!result.success) {
-        notification.add(result.error, "error");
+      if (result.status === "error") {
+        notification.add(result.message, result.status);
         return;
       }
 
@@ -177,14 +184,20 @@ const App = () => {
   );
 
   // [cart] 카트에서 상품을 제거
-  const removeFromCart = useCallback((productId: string) => {
-    setCart((prevCart) =>
-      cartModel.removeItem({
-        cart: prevCart,
+  const removeFromCart = useCallback(
+    (productId: string) => {
+      const result = cartService.removeItemFromCart({
+        cart,
         productId,
-      })
-    );
-  }, []);
+      });
+      if (result.status === "error") {
+        notification.add(result.message, result.status);
+        return;
+      }
+      setCart(result.value);
+    },
+    [cart, notification.add]
+  );
 
   // [cart] 장바구니 수량 업데이트
   const updateQuantity = useCallback(
@@ -194,8 +207,8 @@ const App = () => {
         productId,
         newQuantity,
       });
-      if (!result.success) {
-        notification.add(result.error, "error");
+      if (result.status === "error") {
+        notification.add(result.message, result.status);
         return;
       }
 
@@ -247,34 +260,45 @@ const App = () => {
   // [product] 상품목록에 상품 추가하기
   const addProduct = useCallback(
     (newProduct: Omit<ProductWithUI, "id">) => {
-      const product: ProductWithUI = {
-        ...newProduct,
-        id: `p${Date.now()}`,
-      };
-      setProducts((prev) => [...prev, product]);
-      notification.add("상품이 추가되었습니다.", "success");
+      const result = productService.addNewItem({
+        products,
+        product: newProduct,
+      });
+      if (result.status === "success") {
+        setProducts(result.value);
+      }
+      notification.add(result.message, result.status);
     },
-    [notification.add]
+    [notification.add, products]
   );
 
   // [product] 특정 상품 업데이트하기(수정)
   const updateProduct = useCallback(
     (productId: string, updates: Partial<ProductWithUI>) => {
-      setProducts((prev) =>
-        prev.map((product) =>
-          product.id === productId ? { ...product, ...updates } : product
-        )
-      );
-      notification.add("상품이 수정되었습니다.", "success");
+      const result = productService.updateProduct({
+        products,
+        productId,
+        updates,
+      });
+      if (result.status === "success") {
+        setProducts(result.value);
+      }
+      notification.add(result.message, result.status);
     },
-    [notification.add]
+    [notification.add, products]
   );
 
   // [product] 특정 상품 제거하기
   const deleteProduct = useCallback(
     (productId: string) => {
-      setProducts((prev) => prev.filter((p) => p.id !== productId));
-      notification.add("상품이 삭제되었습니다.", "success");
+      const result = productService.deleteProduct({
+        products,
+        productId,
+      });
+      if (result.status === "success") {
+        setProducts(result.value);
+      }
+      notification.add(result.message, result.status);
     },
     [notification.add]
   );
@@ -388,7 +412,7 @@ const App = () => {
 
   const handleStockChange = useCallback(
     (value: string) => {
-      const validation = productModel.validateProductStock(value);
+      const validation = productService.validateProductStock(value);
 
       if (validation.isValid) {
         setProductForm({
@@ -428,7 +452,7 @@ const App = () => {
 
   const handleProductPriceChange = useCallback(
     (value: string) => {
-      const validation = productModel.validateProductPrice(value);
+      const validation = productService.validateProductPrice(value);
 
       if (!validation.isValid) {
         notification.add(validation.message, "error");

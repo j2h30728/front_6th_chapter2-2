@@ -1,16 +1,17 @@
 import { CartItem, Coupon, Product } from "../../types";
 import cartModel from "../models/cart";
 import discountModel from "../models/discount";
-import productModel from "../models/product";
+import productService from "./product";
 
 export type CartOperationResult =
   | {
-      success: true;
       value: CartItem[];
+      message: string;
+      status: "success";
     }
   | {
-      success: false;
-      error: string;
+      message: string;
+      status: "error";
     };
 
 export interface CartTotalResult {
@@ -76,15 +77,19 @@ const cartService = {
     cart: CartItem[];
     product: Product;
   }): CartOperationResult => {
-    const remaining = productModel.getRemainingStock({ product, cart });
+    const { remainingStock, isOutOfStock, isLowStock } =
+      productService.getStockStatus({
+        product,
+        cart,
+      });
     const existingQty = cartModel.getItemQuantity({
       cart,
       productId: product.id,
     });
-    if (remaining <= 0 || existingQty >= remaining) {
+    if (isOutOfStock || isLowStock || existingQty >= remainingStock) {
       return {
-        success: false,
-        error: `재고는 ${product.stock}개까지만 있습니다.`,
+        message: `재고는 ${product.stock}개까지만 있습니다.`,
+        status: "error",
       };
     }
 
@@ -96,7 +101,11 @@ const cartService = {
         })
       : cartModel.addNewItem({ cart, product });
 
-    return { success: true, value: newCart };
+    return {
+      value: newCart,
+      message: "상품이 추가되었습니다.",
+      status: "success",
+    };
   },
 
   updateItemQuantity: ({
@@ -110,27 +119,35 @@ const cartService = {
   }): CartOperationResult => {
     if (newQuantity <= 0) {
       return {
-        success: true,
         value: cartModel.removeItem({ cart, productId }),
+        message: "상품이 삭제되었습니다.",
+        status: "success",
       };
     }
 
     const item = cartModel.findItem({ cart, productId });
     if (!item) {
-      return { success: false, error: "상품을 찾을 수 없습니다" };
+      return {
+        message: "상품을 찾을 수 없습니다",
+        status: "error",
+      };
     }
 
     if (newQuantity <= 0) {
       return {
-        success: true,
         value: cartModel.removeItem({ cart, productId }),
+        message: "상품이 삭제되었습니다.",
+        status: "success",
       };
     }
 
     const maxStock = item.product.stock;
 
     if (newQuantity > maxStock) {
-      return { success: false, error: `재고는 ${maxStock}개까지만 있습니다.` };
+      return {
+        message: `재고는 ${maxStock}개까지만 있습니다.`,
+        status: "error",
+      };
     }
 
     const updatedCart = cartModel.updateItemQuantity({
@@ -138,7 +155,25 @@ const cartService = {
       productId,
       newQuantity,
     });
-    return { success: true, value: updatedCart };
+    return {
+      value: updatedCart,
+      message: "상품 수량이 변경되었습니다.",
+      status: "success",
+    };
+  },
+
+  removeItemFromCart: ({
+    cart,
+    productId,
+  }: {
+    cart: CartItem[];
+    productId: string;
+  }): CartOperationResult => {
+    return {
+      value: cartModel.removeItem({ cart, productId }),
+      message: "상품이 삭제되었습니다.",
+      status: "success",
+    };
   },
 };
 

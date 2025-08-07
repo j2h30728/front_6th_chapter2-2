@@ -3,7 +3,7 @@ import { ProductWithUI } from "../../App";
 import { formatters } from "../../utils/formatters";
 import { DefaultImageIcon } from "../icons";
 import Button from "../ui/Button";
-import productModel from "../../models/product";
+import productService from "../../services/product";
 
 export default function ProductList({
   cart,
@@ -17,16 +17,10 @@ export default function ProductList({
   addToCart: (product: Product) => void;
 }) {
   const filteredProducts = debouncedSearchTerm
-    ? products.filter(
-        (product) =>
-          product.name
-            .toLowerCase()
-            .includes(debouncedSearchTerm.toLowerCase()) ||
-          (product.description &&
-            product.description
-              .toLowerCase()
-              .includes(debouncedSearchTerm.toLowerCase()))
-      )
+    ? productService.searchProduct({
+        products,
+        searchTerm: debouncedSearchTerm,
+      })
     : products;
 
   if (filteredProducts.length === 0) {
@@ -42,15 +36,15 @@ export default function ProductList({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {filteredProducts.map((product) => {
-        const remainingStock = productModel.getRemainingStock({
-          product,
-          cart,
-        });
+        const { remainingStock, isLowStock, isOutOfStock } =
+          productService.getStockStatus({ product, cart });
         return (
           <ProductItem
             key={product.id}
             product={product}
             remainingStock={remainingStock}
+            isLowStock={isLowStock}
+            isOutOfStock={isOutOfStock}
             addToCart={addToCart}
           />
         );
@@ -62,10 +56,14 @@ export default function ProductList({
 export const ProductItem = ({
   product,
   remainingStock,
+  isLowStock,
+  isOutOfStock,
   addToCart,
 }: {
   product: ProductWithUI;
   remainingStock: number;
+  isLowStock: boolean;
+  isOutOfStock: boolean;
   addToCart: (product: Product) => void;
 }) => {
   return (
@@ -106,9 +104,7 @@ export const ProductItem = ({
         {/* 가격 정보 */}
         <div className="mb-3">
           <p className="text-lg font-bold text-gray-900">
-            {remainingStock <= 0
-              ? "SOLD OUT"
-              : formatters.price(product.price, false)}
+            {isOutOfStock ? "SOLD OUT" : formatters.price(product.price, false)}
           </p>
           {product.discounts.length > 0 && (
             <p className="text-xs text-gray-500">
@@ -120,7 +116,7 @@ export const ProductItem = ({
 
         {/* 재고 상태 */}
         <div className="mb-3">
-          {remainingStock <= 5 && remainingStock > 0 && (
+          {isLowStock && (
             <p className="text-xs text-red-600 font-medium">
               품절임박! {remainingStock}개 남음
             </p>
@@ -133,11 +129,11 @@ export const ProductItem = ({
         {/* 장바구니 버튼 */}
         <Button
           onClick={() => addToCart(product)}
-          disabled={remainingStock <= 0}
-          variant={remainingStock <= 0 ? "ghost" : "black"}
+          disabled={isOutOfStock}
+          variant={isOutOfStock ? "ghost" : "black"}
           className="w-full"
         >
-          {remainingStock <= 0 ? "품절" : "장바구니 담기"}
+          {isOutOfStock ? "품절" : "장바구니 담기"}
         </Button>
       </div>
     </div>
