@@ -1,6 +1,6 @@
 import { CartIcon } from "../components/icons";
 import Button from "../components/ui/Button";
-import Input from "../components/ui/Input";
+import SearchBar from "../components/ui/SearchBar";
 
 import { CartItem } from "../../types";
 
@@ -27,15 +27,12 @@ export default function Header({
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center flex-1">
             <h1 className="text-xl font-semibold text-gray-800">SHOP</h1>
-            {/* 검색창 - 안티패턴: 검색 로직이 컴포넌트에 직접 포함 */}
+            {/* 검색창 */}
             {!isAdmin && (
               <div className="ml-8 flex-1 max-w-md">
-                <Input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="상품 검색..."
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                <SearchBar
+                  searchTerm={searchTerm}
+                  setSearchTerm={setSearchTerm}
                 />
               </div>
             )}
