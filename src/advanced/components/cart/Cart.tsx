@@ -13,7 +13,7 @@ interface CartProps {
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, newQuantity: number) => void;
   calculateItemTotal: (item: CartItem, cart: CartItem[]) => number;
-  applyCoupon: (coupon: Coupon) => void;
+  applyCoupon: (coupon: Coupon, cart: CartItem[]) => void;
   clearSelectedCoupon: () => void;
   completeOrder: () => void;
 }
@@ -35,6 +35,11 @@ export default function Cart({
     selectedCoupon,
   });
 
+  // applyCoupon을 래핑하여 cart를 전달
+  const handleApplyCoupon = (coupon: Coupon) => {
+    applyCoupon(coupon, cart);
+  };
+
   return (
     <div className="sticky top-24 space-y-4">
       <CartHeader>
@@ -51,7 +56,7 @@ export default function Cart({
           <CouponSection
             coupons={coupons}
             selectedCoupon={selectedCoupon}
-            applyCoupon={applyCoupon}
+            applyCoupon={handleApplyCoupon}
             clearSelectedCoupon={clearSelectedCoupon}
           />
           <PaymentSection

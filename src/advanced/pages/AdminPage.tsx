@@ -1,26 +1,17 @@
 import { useState, useCallback } from "react";
-import { useAtom } from "jotai";
 import { ProductWithUI } from "../App";
 import { Coupon } from "../../types";
 import { priceUtils } from "../utils/priceUtils";
 import { useTab } from "../hooks/useTab";
+import { useProduct, useCoupon, useNotification } from "../hooks";
 import { VALIDATION_LIMITS } from "../utils/constants";
 import { isValidNumericInput } from "../utils/validators";
 import { numberUtils } from "../utils/numberUtils";
-import {
-  productsAtom,
-  couponsAtom,
-  productActionsAtom,
-  couponActionsAtom,
-  notificationActionsAtom,
-} from "../atoms";
 
 export default function AdminPage() {
-  const [products] = useAtom(productsAtom);
-  const [coupons] = useAtom(couponsAtom);
-  const [, productActions] = useAtom(productActionsAtom);
-  const [, couponActions] = useAtom(couponActionsAtom);
-  const [, notificationActions] = useAtom(notificationActionsAtom);
+  const { products, addProduct, updateProduct, deleteProduct } = useProduct();
+  const { coupons, addCoupon, deleteCoupon } = useCoupon();
+  const { addNotification } = useNotification();
 
   // 탭 관리
   const { activeTab, setActiveTab } = useTab<"products" | "coupons">(
@@ -61,44 +52,46 @@ export default function AdminPage() {
   // 상품 추가 핸들러
   const handleAddProduct = useCallback(
     (newProduct: Omit<ProductWithUI, "id">) => {
-      productActions({ type: "ADD_PRODUCT", payload: newProduct });
+      addProduct(newProduct);
+      addNotification("상품이 추가되었습니다.", "success");
     },
-    [productActions]
+    [addProduct, addNotification]
   );
 
   // 상품 수정 핸들러
   const handleUpdateProduct = useCallback(
     (productId: string, updates: Partial<ProductWithUI>) => {
-      productActions({
-        type: "UPDATE_PRODUCT",
-        payload: { productId, updates },
-      });
+      updateProduct(productId, updates);
+      addNotification("상품이 수정되었습니다.", "success");
     },
-    [productActions]
+    [updateProduct, addNotification]
   );
 
   // 상품 삭제 핸들러
   const handleDeleteProduct = useCallback(
     (productId: string) => {
-      productActions({ type: "DELETE_PRODUCT", payload: productId });
+      deleteProduct(productId);
+      addNotification("상품이 삭제되었습니다.", "success");
     },
-    [productActions]
+    [deleteProduct, addNotification]
   );
 
   // 쿠폰 추가 핸들러
   const handleAddCoupon = useCallback(
     (newCoupon: Coupon) => {
-      couponActions({ type: "ADD_COUPON", payload: newCoupon });
+      addCoupon(newCoupon);
+      addNotification("쿠폰이 추가되었습니다.", "success");
     },
-    [couponActions]
+    [addCoupon, addNotification]
   );
 
   // 쿠폰 삭제 핸들러
   const handleDeleteCoupon = useCallback(
     (couponCode: string) => {
-      couponActions({ type: "DELETE_COUPON", payload: couponCode });
+      deleteCoupon(couponCode);
+      addNotification("쿠폰이 삭제되었습니다.", "success");
     },
-    [couponActions]
+    [deleteCoupon, addNotification]
   );
 
   // 상품 폼 제출 핸들러
@@ -333,13 +326,10 @@ export default function AdminPage() {
                         } else if (
                           !numberUtils.isNonNegative(parseInt(value))
                         ) {
-                          notificationActions({
-                            type: "ADD",
-                            payload: {
-                              message: `가격은 ${VALIDATION_LIMITS.PRODUCT.MIN_VALUE}보다 커야 합니다`,
-                              type: "error",
-                            },
-                          });
+                          addNotification(
+                            `가격은 ${VALIDATION_LIMITS.PRODUCT.MIN_VALUE}보다 커야 합니다`,
+                            "error"
+                          );
                           setProductForm({
                             ...productForm,
                             price: VALIDATION_LIMITS.PRODUCT.MIN_VALUE,
@@ -380,13 +370,10 @@ export default function AdminPage() {
                           );
 
                           if (stockValue !== clampedStock) {
-                            notificationActions({
-                              type: "ADD",
-                              payload: {
-                                message: `재고는 ${VALIDATION_LIMITS.PRODUCT.MIN_STOCK}개 이상 ${VALIDATION_LIMITS.PRODUCT.MAX_STOCK}개 이하여야 합니다`,
-                                type: "error",
-                              },
-                            });
+                            addNotification(
+                              `재고는 ${VALIDATION_LIMITS.PRODUCT.MIN_STOCK}개 이상 ${VALIDATION_LIMITS.PRODUCT.MAX_STOCK}개 이하여야 합니다`,
+                              "error"
+                            );
                             setProductForm({
                               ...productForm,
                               stock: clampedStock,
@@ -691,13 +678,10 @@ export default function AdminPage() {
                             );
 
                             if (value !== clampedValue) {
-                              notificationActions({
-                                type: "ADD",
-                                payload: {
-                                  message: "할인율은 100%를 초과할 수 없습니다",
-                                  type: "error",
-                                },
-                              });
+                              addNotification(
+                                "할인율은 100%를 초과할 수 없습니다",
+                                "error"
+                              );
                               setCouponForm({
                                 ...couponForm,
                                 discountValue: clampedValue,
@@ -711,15 +695,12 @@ export default function AdminPage() {
                             );
 
                             if (value !== clampedValue) {
-                              notificationActions({
-                                type: "ADD",
-                                payload: {
-                                  message: `할인 금액은 ${
-                                    limits.MIN_VALUE
-                                  }원 이상 ${limits.MAX_AMOUNT.toLocaleString()}원 이하여야 합니다`,
-                                  type: "error",
-                                },
-                              });
+                              addNotification(
+                                `할인 금액은 ${
+                                  limits.MIN_VALUE
+                                }원 이상 ${limits.MAX_AMOUNT.toLocaleString()}원 이하여야 합니다`,
+                                "error"
+                              );
                               setCouponForm({
                                 ...couponForm,
                                 discountValue: clampedValue,

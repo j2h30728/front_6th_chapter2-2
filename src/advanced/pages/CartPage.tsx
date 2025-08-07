@@ -1,72 +1,24 @@
-import { useAtom } from "jotai";
 import { ProductWithUI } from "../App";
 import ProductList from "../components/product/ProductList";
 import Cart from "../components/cart/Cart";
-import {
-  productsAtom,
-  cartAtom,
-  couponsAtom,
-  selectedCouponAtom,
-  cartActionsAtom,
-  completeOrderAtom,
-  couponActionsAtom,
-} from "../atoms";
-import { useDebouncedSearch } from "../hooks/useDebouncedSearch";
-import productService from "../services/product";
-import cartService from "../services/cart";
+import { useCart, useCoupon, useProduct, useSearch } from "../hooks";
 
 export default function CartPage() {
-  const [products] = useAtom(productsAtom);
-  const [cart] = useAtom(cartAtom);
-  const [coupons] = useAtom(couponsAtom);
-  const [selectedCoupon] = useAtom(selectedCouponAtom);
-  const { debouncedSearchTerm } = useDebouncedSearch();
+  const {
+    cart,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    calculateItemTotal,
+    getStockStatus,
+    completeOrder,
+  } = useCart();
 
-  const [, cartActions] = useAtom(cartActionsAtom);
-  const [, completeOrder] = useAtom(completeOrderAtom);
-  const [, couponActions] = useAtom(couponActionsAtom);
+  const { coupons, selectedCoupon, applyCoupon, clearSelectedCoupon } =
+    useCoupon();
 
-  const handleAddToCart = (product: ProductWithUI) => {
-    cartActions({ type: "ADD_TO_CART", payload: product });
-  };
-
-  const handleRemoveFromCart = (productId: string) => {
-    cartActions({ type: "REMOVE_FROM_CART", payload: productId });
-  };
-
-  const handleUpdateQuantity = (productId: string, quantity: number) => {
-    cartActions({ type: "UPDATE_QUANTITY", payload: { productId, quantity } });
-  };
-
-  const handleApplyCoupon = (coupon: any) => {
-    couponActions({ type: "APPLY_COUPON", payload: coupon });
-  };
-
-  const handleClearSelectedCoupon = () => {
-    couponActions({ type: "CLEAR_SELECTED_COUPON" });
-  };
-
-  const handleCompleteOrder = () => {
-    completeOrder();
-  };
-
-  const searchProduct = (searchTerm: string) => {
-    return productService.searchProduct({
-      products,
-      searchTerm,
-    });
-  };
-
-  const getStockStatus = (product: ProductWithUI, cart: any[]) => {
-    return productService.getStockStatus({
-      product,
-      cart,
-    });
-  };
-
-  const calculateItemTotal = (item: any, cart: any[]) => {
-    return cartService.calculateItemTotal({ item, cart });
-  };
+  const { products, searchProduct } = useProduct();
+  const { debouncedSearchTerm } = useSearch();
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -83,7 +35,7 @@ export default function CartPage() {
             cart={cart}
             products={products}
             debouncedSearchTerm={debouncedSearchTerm}
-            addToCart={handleAddToCart}
+            addToCart={addToCart}
             searchProduct={searchProduct}
             getStockStatus={getStockStatus}
           />
@@ -96,12 +48,12 @@ export default function CartPage() {
           cart={cart}
           coupons={coupons}
           selectedCoupon={selectedCoupon}
-          removeFromCart={handleRemoveFromCart}
-          updateQuantity={handleUpdateQuantity}
+          removeFromCart={removeFromCart}
+          updateQuantity={updateQuantity}
           calculateItemTotal={calculateItemTotal}
-          applyCoupon={handleApplyCoupon}
-          clearSelectedCoupon={handleClearSelectedCoupon}
-          completeOrder={handleCompleteOrder}
+          applyCoupon={applyCoupon}
+          clearSelectedCoupon={clearSelectedCoupon}
+          completeOrder={completeOrder}
         />
       </div>
     </div>
