@@ -1,65 +1,83 @@
 import { useCallback } from "react";
-import { Coupon, CartItem } from "../../types";
+import { useCoupon } from "./useCoupon";
 import cartService from "../services/cart";
 
-export const useCouponActions = (
-  currentCart: CartItem[],
-  currentSelectedCoupon: Coupon | null,
-  applyCouponFn: (
-    coupon: Coupon,
-    currentTotal: number
-  ) => { isValid: boolean; message: string },
-  addCouponFn: (newCoupon: Coupon) => {
-    status: "error" | "success";
-    message: string;
-  },
-  deleteCouponFn: (couponCode: string) => {
-    status: "error" | "success";
-    message: string;
-  },
-  notification: {
-    add: (message: string, type?: "error" | "success" | "warning") => void;
-  }
-) => {
-  const handleApplyCoupon = useCallback(
-    (coupon: Coupon) => {
-      // 현재 장바구니에 존재하는 할인후 전체 가격
-      const currentTotal = cartService.calculateCartTotal({
-        cart: currentCart,
-        selectedCoupon: currentSelectedCoupon,
+interface CouponActionCallbacks {
+  onSuccess?: (message: string) => void;
+  onError?: (message: string) => void;
+}
+
+export function useCouponActions(callbacks?: CouponActionCallbacks) {
+  const {
+    selectedCoupon,
+    coupons,
+    applyCoupon: applyCouponOriginal,
+    addCoupon: addCouponOriginal,
+    deleteCoupon: deleteCouponOriginal,
+    clearSelectedCoupon: clearSelectedCouponOriginal,
+  } = useCoupon();
+
+  const applyCoupon = useCallback(
+    (coupon: any, cart: any[]) => {
+      const cartTotal = cartService.calculateCartTotal({
+        cart,
+        selectedCoupon: null, // 쿠폰 적용 전 총액 계산
       }).totalAfterDiscount;
 
-      // 쿠폰 적용
-      const validation = applyCouponFn(coupon, currentTotal);
-      if (!validation.isValid) {
-        notification.add(validation.message, "error");
-        return;
+      const result = applyCouponOriginal(coupon, cartTotal);
+
+      if (result.isValid) {
+        callbacks?.onSuccess?.("쿠폰이 적용되었습니다");
+      } else {
+        callbacks?.onError?.(result.message);
       }
 
-      notification.add("쿠폰이 적용되었습니다.", "success");
+      return result;
     },
-    [currentCart, currentSelectedCoupon, applyCouponFn, notification.add]
+    [applyCouponOriginal, callbacks]
   );
 
-  const handleAddCoupon = useCallback(
-    (newCoupon: Coupon) => {
-      const result = addCouponFn(newCoupon);
-      notification.add(result.message, result.status);
+  const addCoupon = useCallback(
+    (coupon: any) => {
+      const result = addCouponOriginal(coupon);
+      
+      if (result.status === "success") {
+        callbacks?.onSuccess?.("쿠폰이 추가되었습니다");
+      } else {
+        callbacks?.onError?.(result.message);
+      }
+      
+      return result;
     },
-    [addCouponFn, notification.add]
+    [addCouponOriginal, callbacks]
   );
 
-  const handleDeleteCoupon = useCallback(
+  const deleteCoupon = useCallback(
     (couponCode: string) => {
-      const result = deleteCouponFn(couponCode);
-      notification.add(result.message, result.status);
+      const result = deleteCouponOriginal(couponCode);
+      
+      if (result.status === "success") {
+        callbacks?.onSuccess?.("쿠폰이 삭제되었습니다");
+      } else {
+        callbacks?.onError?.(result.message);
+      }
+      
+      return result;
     },
-    [deleteCouponFn, notification.add]
+    [deleteCouponOriginal, callbacks]
   );
+
+  const clearSelectedCoupon = useCallback(() => {
+    clearSelectedCouponOriginal();
+    callbacks?.onSuccess?.("쿠폰이 해제되었습니다");
+  }, [clearSelectedCouponOriginal, callbacks]);
 
   return {
-    handleApplyCoupon,
-    handleAddCoupon,
-    handleDeleteCoupon,
+    selectedCoupon,
+    coupons,
+    applyCoupon,
+    addCoupon,
+    deleteCoupon,
+    clearSelectedCoupon,
   };
-};
+} 

@@ -2,7 +2,6 @@ import { useReducer, useCallback } from "react";
 import { Coupon } from "../../types";
 import useLocalStorage from "../utils/hooks/useLocalStorage";
 import couponService from "../services/coupon";
-import couponModel from "../models/coupon";
 
 type CouponState = {
   selectedCoupon: Coupon | null;
@@ -107,6 +106,7 @@ export function useCoupon() {
     [setStoredSelectedCoupon, setStoredCoupons]
   );
 
+  // 액션 함수들
   const applyCoupon = useCallback(
     (coupon: Coupon, cartTotal: number) => {
       const validation = couponService.apply({
@@ -116,23 +116,23 @@ export function useCoupon() {
 
       if (validation.isValid) {
         dispatch({ type: "APPLY_COUPON", payload: { coupon, cartTotal } });
-        syncWithLocalStorage(state.selectedCoupon, state.coupons);
+        syncWithLocalStorage(coupon, state.coupons);
       }
 
       return validation;
     },
-    [state.selectedCoupon, state.coupons, syncWithLocalStorage]
+    [state.coupons, syncWithLocalStorage]
   );
 
   const addCoupon = useCallback(
-    (newCoupon: Coupon) => {
+    (coupon: Coupon) => {
       const result = couponService.addCoupon({
         coupons: state.coupons,
-        newCoupon,
+        newCoupon: coupon,
       });
 
       if (result.status === "success") {
-        dispatch({ type: "ADD_COUPON", payload: newCoupon });
+        dispatch({ type: "ADD_COUPON", payload: coupon });
         syncWithLocalStorage(state.selectedCoupon, result.value);
       }
 
@@ -150,7 +150,11 @@ export function useCoupon() {
 
       if (result.status === "success") {
         dispatch({ type: "DELETE_COUPON", payload: couponCode });
-        syncWithLocalStorage(state.selectedCoupon, result.value);
+        const newSelectedCoupon =
+          state.selectedCoupon?.code === couponCode
+            ? null
+            : state.selectedCoupon;
+        syncWithLocalStorage(newSelectedCoupon, result.value);
       }
 
       return result;
@@ -158,28 +162,38 @@ export function useCoupon() {
     [state.coupons, state.selectedCoupon, syncWithLocalStorage]
   );
 
-  const validateCoupon = useCallback(
-    (discountType: "amount" | "percentage", discountValue: number) => {
-      return couponService.validateDiscountRange({
-        discountType,
-        discountValue,
-      });
-    },
-    []
-  );
-
-  const formatCouponCode = useCallback((code: string) => {
-    return couponModel.formatCouponCode(code);
-  }, []);
-
-  const initializeCoupon = useCallback(() => {
-    return couponModel.initialize();
-  }, []);
-
   const clearSelectedCoupon = useCallback(() => {
     dispatch({ type: "CLEAR_SELECTED_COUPON" });
     syncWithLocalStorage(null, state.coupons);
   }, [state.coupons, syncWithLocalStorage]);
+
+  // 계산 함수들
+  const getDiscountAmount = useCallback(
+    (totalBeforeDiscount: number, totalAfterDiscount: number) => {
+      return couponService.getDiscountAmount(
+        totalBeforeDiscount,
+        totalAfterDiscount
+      );
+    },
+    []
+  );
+
+  const calculateDiscountRate = useCallback(
+    (originalPrice: number, discountedPrice: number) => {
+      return couponService.calculateDiscountRate(
+        originalPrice,
+        discountedPrice
+      );
+    },
+    []
+  );
+
+  const hasDiscount = useCallback(
+    (totalBeforeDiscount: number, totalAfterDiscount: number) => {
+      return couponService.hasDiscount(totalBeforeDiscount, totalAfterDiscount);
+    },
+    []
+  );
 
   return {
     selectedCoupon: state.selectedCoupon,
@@ -187,9 +201,9 @@ export function useCoupon() {
     applyCoupon,
     addCoupon,
     deleteCoupon,
-    validateCoupon,
-    formatCouponCode,
-    initializeCoupon,
     clearSelectedCoupon,
+    getDiscountAmount,
+    calculateDiscountRate,
+    hasDiscount,
   };
 }

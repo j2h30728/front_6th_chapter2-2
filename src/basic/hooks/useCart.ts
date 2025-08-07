@@ -72,7 +72,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
   }
 }
 
-// 커스텀 훅 - 장바구니만 관리
+// 통합된 카트 훅
 export function useCart() {
   const [storedCart, setStoredCart] = useLocalStorage<CartItem[]>("cart", []);
 
@@ -80,7 +80,7 @@ export function useCart() {
     cart: storedCart,
   });
 
-  // reducer 상태 변경 시 localStorage 동기화
+  // localStorage 동기화
   const syncWithLocalStorage = useCallback(
     (newCart: CartItem[]) => {
       setStoredCart(newCart);
@@ -88,6 +88,7 @@ export function useCart() {
     [setStoredCart]
   );
 
+  // 액션 함수들
   const addToCart = useCallback(
     (product: ProductWithUI) => {
       const result = cartService.addItemToCart({
@@ -162,9 +163,13 @@ export function useCart() {
     return result;
   }, [state.cart, syncWithLocalStorage]);
 
-  const calculateItemTotal = useCallback((item: CartItem, cart: CartItem[]) => {
-    return cartService.calculateItemTotal({ item, cart });
-  }, []);
+  // 계산 함수들
+  const calculateItemTotal = useCallback(
+    (item: CartItem) => {
+      return cartService.calculateItemTotal({ item, cart: state.cart });
+    },
+    [state.cart]
+  );
 
   const calculateOriginalPrice = useCallback((item: CartItem) => {
     return cartService.calculateOriginalPrice(item);

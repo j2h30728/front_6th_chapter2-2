@@ -1,60 +1,85 @@
 import { useCallback } from "react";
+import { useCart } from "./useCart";
 import { ProductWithUI } from "../App";
 
-export const useCartActions = (
-  addToCartFn: (product: ProductWithUI) => {
-    status: "error" | "success";
-    message: string;
-  },
-  removeFromCartFn: (productId: string) => {
-    status: "error" | "success";
-    message: string;
-  },
-  updateQuantityFn: (
-    productId: string,
-    newQuantity: number
-  ) => { status: "error" | "success"; message: string },
-  notification: {
-    add: (message: string, type?: "error" | "success" | "warning") => void;
-  }
-) => {
-  const handleAddToCart = useCallback(
+interface CartActionCallbacks {
+  onSuccess?: (action: string) => void;
+  onError?: (message: string) => void;
+}
+
+export function useCartActions(callbacks?: CartActionCallbacks) {
+  const {
+    cart,
+    addToCart: addToCartOriginal,
+    removeFromCart: removeFromCartOriginal,
+    updateQuantity: updateQuantityOriginal,
+    completeOrder: completeOrderOriginal,
+    calculateItemTotal,
+  } = useCart();
+
+  const addToCart = useCallback(
     (product: ProductWithUI) => {
-      const result = addToCartFn(product);
-      if (result.status === "error") {
-        notification.add(result.message, result.status);
-        return;
+      const result = addToCartOriginal(product);
+
+      if (result.status === "success") {
+        callbacks?.onSuccess?.("장바구니에 담았습니다");
+      } else {
+        callbacks?.onError?.(result.message);
       }
-      notification.add("장바구니에 담았습니다", "success");
+
+      return result;
     },
-    [addToCartFn, notification.add]
+    [addToCartOriginal, callbacks]
   );
 
-  const handleRemoveFromCart = useCallback(
+  const removeFromCart = useCallback(
     (productId: string) => {
-      const result = removeFromCartFn(productId);
-      if (result.status === "error") {
-        notification.add(result.message, result.status);
-        return;
+      const result = removeFromCartOriginal(productId);
+
+      if (result.status === "success") {
+        callbacks?.onSuccess?.("장바구니에서 제거했습니다");
+      } else {
+        callbacks?.onError?.(result.message);
       }
+
+      return result;
     },
-    [removeFromCartFn, notification.add]
+    [removeFromCartOriginal, callbacks]
   );
 
-  const handleUpdateQuantity = useCallback(
-    (productId: string, newQuantity: number) => {
-      const result = updateQuantityFn(productId, newQuantity);
-      if (result.status === "error") {
-        notification.add(result.message, result.status);
-        return;
+  const updateQuantity = useCallback(
+    (productId: string, quantity: number) => {
+      const result = updateQuantityOriginal(productId, quantity);
+
+      if (result.status === "success") {
+        callbacks?.onSuccess?.("수량이 변경되었습니다");
+      } else {
+        callbacks?.onError?.(result.message);
       }
+
+      return result;
     },
-    [updateQuantityFn, notification.add]
+    [updateQuantityOriginal, callbacks]
   );
+
+  const completeOrder = useCallback(() => {
+    const result = completeOrderOriginal();
+
+    if (result.status === "success") {
+      callbacks?.onSuccess?.("주문이 완료되었습니다");
+    } else {
+      callbacks?.onError?.(result.message);
+    }
+
+    return result;
+  }, [completeOrderOriginal, callbacks]);
 
   return {
-    handleAddToCart,
-    handleRemoveFromCart,
-    handleUpdateQuantity,
+    cart,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    completeOrder,
+    calculateItemTotal,
   };
-};
+}

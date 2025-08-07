@@ -1,15 +1,11 @@
 import { Product } from "../types";
-import useNotification from "./utils/hooks/useNotification";
 import NotificationToast from "./components/ui/NotificationToast";
-import { useCart } from "./hooks/useCart";
-import { useCoupon } from "./hooks/useCoupon";
+import { useCartActions } from "./hooks/useCartActions";
+import { useCouponActions } from "./hooks/useCouponActions";
 import { useProduct } from "./hooks/useProduct";
 import { useAdminMode } from "./hooks/useAdminMode";
 import { useSearch } from "./hooks/useSearch";
-import { useCartActions } from "./hooks/useCartActions";
-import { useProductActions } from "./hooks/useProductActions";
-import { useCouponActions } from "./hooks/useCouponActions";
-import { useOrderActions } from "./hooks/useOrderActions";
+import useNotification from "./utils/hooks/useNotification";
 import AdminPage from "./pages/AdminPage";
 import CartPage from "./pages/CartPage";
 import Header from "./layout/Header";
@@ -29,6 +25,10 @@ const App = () => {
     getStockStatus,
   } = useProduct();
 
+  // 알림 기능
+  const notification = useNotification();
+
+  // 카트 액션들 (알림 콜백 포함)
   const {
     cart,
     addToCart,
@@ -36,42 +36,29 @@ const App = () => {
     updateQuantity,
     completeOrder,
     calculateItemTotal,
-  } = useCart();
+  } = useCartActions({
+    onSuccess: (message) => notification.add(message, "success"),
+    onError: (message) => notification.add(message, "error"),
+  });
 
+  // 쿠폰 액션들 (알림 콜백 포함)
   const {
     selectedCoupon,
     coupons,
     applyCoupon,
     addCoupon,
     deleteCoupon,
-
     clearSelectedCoupon,
-  } = useCoupon();
+  } = useCouponActions({
+    onSuccess: (message) => notification.add(message, "success"),
+    onError: (message) => notification.add(message, "error"),
+  });
 
   // 어드민 모드 관리
   const { isAdmin, toggleAdmin } = useAdminMode();
 
-  // 알람 기능
-  const notification = useNotification();
-
   // 검색어 관리
   const { searchTerm, setSearchTerm, debouncedSearchTerm } = useSearch();
-
-  // 액션 훅들
-  const { handleAddToCart, handleRemoveFromCart, handleUpdateQuantity } =
-    useCartActions(addToCart, removeFromCart, updateQuantity, notification);
-  const { handleAddProduct, handleUpdateProduct, handleDeleteProduct } =
-    useProductActions(addProduct, updateProduct, deleteProduct, notification);
-  const { handleApplyCoupon, handleAddCoupon, handleDeleteCoupon } =
-    useCouponActions(
-      cart,
-      selectedCoupon,
-      applyCoupon,
-      addCoupon,
-      deleteCoupon,
-      notification
-    );
-  const { handleCompleteOrder } = useOrderActions(completeOrder, notification);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -93,11 +80,11 @@ const App = () => {
             isAdmin={isAdmin}
             products={products}
             coupons={coupons}
-            addProduct={handleAddProduct}
-            updateProduct={handleUpdateProduct}
-            deleteProduct={handleDeleteProduct}
-            addCoupon={handleAddCoupon}
-            deleteCoupon={handleDeleteCoupon}
+            addProduct={addProduct}
+            updateProduct={updateProduct}
+            deleteProduct={deleteProduct}
+            addCoupon={addCoupon}
+            deleteCoupon={deleteCoupon}
             notification={notification}
           />
         ) : (
@@ -108,13 +95,13 @@ const App = () => {
             selectedCoupon={selectedCoupon}
             searchTerm={searchTerm}
             debouncedSearchTerm={debouncedSearchTerm}
-            addToCart={handleAddToCart}
-            removeFromCart={handleRemoveFromCart}
-            updateQuantity={handleUpdateQuantity}
+            addToCart={addToCart}
+            removeFromCart={removeFromCart}
+            updateQuantity={updateQuantity}
             calculateItemTotal={calculateItemTotal}
-            applyCoupon={handleApplyCoupon}
+            applyCoupon={(coupon) => applyCoupon(coupon, cart)}
             clearSelectedCoupon={clearSelectedCoupon}
-            completeOrder={handleCompleteOrder}
+            completeOrder={completeOrder}
             searchProduct={searchProduct}
             getStockStatus={getStockStatus}
           />

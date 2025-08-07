@@ -114,15 +114,16 @@ export function useProduct() {
     [setStoredProducts]
   );
 
+  // 액션 함수들
   const addProduct = useCallback(
-    (newProduct: Omit<ProductWithUI, "id">) => {
+    (product: Omit<ProductWithUI, "id">) => {
       const result = productService.addNewItem({
         products: state.products,
-        product: newProduct,
+        product,
       });
 
       if (result.status === "success") {
-        dispatch({ type: "ADD_PRODUCT", payload: newProduct });
+        dispatch({ type: "ADD_PRODUCT", payload: product });
         syncWithLocalStorage(result.value);
       }
 
@@ -140,7 +141,10 @@ export function useProduct() {
       });
 
       if (result.status === "success") {
-        dispatch({ type: "UPDATE_PRODUCT", payload: { productId, updates } });
+        dispatch({
+          type: "UPDATE_PRODUCT",
+          payload: { productId, updates },
+        });
         syncWithLocalStorage(result.value);
       }
 
@@ -166,6 +170,7 @@ export function useProduct() {
     [state.products, syncWithLocalStorage]
   );
 
+  // 검색 및 유틸리티 함수들
   const searchProduct = useCallback(
     (searchTerm: string) => {
       return productService.searchProduct({
@@ -177,18 +182,15 @@ export function useProduct() {
   );
 
   const getStockStatus = useCallback((product: ProductWithUI, cart: any[]) => {
-    return productService.getStockStatus({
-      product,
-      cart,
-    });
+    return productService.getStockStatus({ product, cart });
   }, []);
 
-  const validateProductPrice = useCallback((value: string) => {
-    return productService.validateProductPrice(value);
+  const validateProductPrice = useCallback((price: string) => {
+    return productService.validateProductPrice(price);
   }, []);
 
-  const validateProductStock = useCallback((value: string) => {
-    return productService.validateProductStock(value);
+  const validateProductStock = useCallback((stock: string) => {
+    return productService.validateProductStock(stock);
   }, []);
 
   return {
