@@ -1,4 +1,3 @@
-import { ProductWithUI } from "../App";
 import ProductList from "../components/product/ProductList";
 import Cart from "../components/cart/Cart";
 import { useCart, useCoupon, useProduct, useSearch } from "../hooks";
